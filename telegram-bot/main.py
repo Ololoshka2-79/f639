@@ -34,7 +34,7 @@ log = logging.getLogger("f639-bot")
 router = Router()
 
 # Деплой фронта (Cloudflare Workers); переопределяется через WEB_APP_URL
-DEFAULT_WEB_APP_URL = "https://f639project.ollolo2111.workers.dev"
+DEFAULT_WEB_APP_URL = "https://f639.onrender.com"
 
 WELCOME_HTML = (
     "Добро пожаловать в F 63.9 <code>code of love</code>!\n"
