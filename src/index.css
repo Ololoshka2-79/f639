@@ -1,0 +1,189 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    height: 100%;
+  }
+
+  #root {
+    min-height: 100%;
+    min-height: 100dvh;
+  }
+
+  :root {
+    --app-bg: #FFFFFF;
+    --app-surface-1: #F6F6F6;
+    --app-surface-2: #EEEEEE;
+    --app-surface-3: #E4E4E4;
+    --app-surface-hover: #DCDCDC;
+    --app-text: #0A0A0A;
+    --app-text-muted: #3D3D3D;
+    --app-border: rgba(0,0,0,0.12);
+    --app-border-strong: rgba(0,0,0,0.22);
+    --app-accent: #0A0A0A;
+  }
+
+  .dark {
+    --app-bg: #000000;
+    --app-surface-1: #0C0C0C;
+    --app-surface-2: #121212;
+    --app-surface-3: #181818;
+    --app-surface-hover: #1F1F1F;
+    --app-text: #FAFAFA;
+    --app-text-muted: #A8A8A8;
+    --app-border: rgba(255,255,255,0.12);
+    --app-border-strong: rgba(255,255,255,0.22);
+    --app-accent: #F0F0F0;
+  }
+
+  body {
+    min-height: 100%;
+    min-height: 100dvh;
+    background-color: var(--app-bg);
+    color: var(--app-text);
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+    margin: 0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Playfair Display", serif;
+  }
+}
+
+@layer components {
+  .luxury-button {
+    position: relative;
+    overflow: hidden;
+    padding: 0.75rem 1.5rem;
+    border-radius: 24px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .luxury-button:active {
+    transform: scale(0.95);
+  }
+
+  .app-button-primary {
+    position: relative;
+    overflow: hidden;
+    padding: 0.75rem 1.5rem;
+    border-radius: 24px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    cursor: pointer;
+    background: var(--app-accent);
+    color: var(--app-bg);
+    border: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+
+  .dark .app-button-primary {
+    box-shadow: 0 8px 24px rgba(255,255,255,0.03);
+  }
+
+  .app-button-outline {
+    position: relative;
+    overflow: hidden;
+    padding: 0.75rem 1.5rem;
+    border-radius: 24px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--app-border-strong);
+    color: var(--app-text);
+    background: var(--app-surface-2);
+  }
+
+  .app-button-outline:hover {
+    background-color: var(--app-surface-hover);
+    border-color: var(--app-border-strong);
+    transform: translateY(-1px);
+  }
+
+  .app-card {
+    background-color: var(--app-surface-2);
+    border-radius: 24px;
+    padding: 1rem;
+    border: 1px solid var(--app-border);
+    transition: all 0.2s ease;
+  }
+  
+  .app-card:hover {
+    background-color: var(--app-surface-3);
+    transform: translateY(-1px);
+  }
+
+  .app-ripple {
+    position: absolute;
+    border-radius: 9999px;
+    background-color: rgba(255, 255, 255, 0.2);
+    pointer-events: none;
+  }
+}
+
+@keyframes ripple {
+  from {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.animate-ripple {
+  animation: ripple 0.6s linear;
+}
+
+.tg-search-input {
+  color: var(--tg-theme-text-color, var(--app-text));
+  background-color: var(--tg-theme-bg-color, var(--app-surface-2));
+  caret-color: var(--tg-theme-text-color, var(--app-text));
+}
+
+.tg-search-input::placeholder {
+  color: var(--tg-theme-hint-color, var(--app-text-muted));
+}
+
+.tg-search-input:focus {
+  background-color: var(--tg-theme-bg-color, var(--app-surface-1));
+}
+
+/* Telegram Safe Area Handling */
+.safe-area-top {
+  padding-top: var(--tg-safe-area-inset-top, 0px);
+}
+
+.safe-area-bottom {
+  padding-bottom: var(--tg-safe-area-inset-bottom, 0px);
+}
+
+/* Yandex Maps Balloon Overrides */
+.ymaps-2-1-79-balloon__content,
+[class*="balloon__content"] {
+  background-color: var(--app-bg) !important;
+  color: var(--app-text) !important;
+  border-radius: 16px !important;
+  padding: 10px !important;
+  border: 1px solid var(--app-border-strong) !important;
+}
+
+[class*="balloon__layout"] {
+  background-color: transparent !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3) !important;
+}
+
+[class*="balloon__tail"] {
+  background-color: var(--app-bg) !important;
+}
+
+/* Custom Search UI in Map */
+[class*="search__result"] {
+  color: #000 !important; /* Yandex search list results often assume white bg */
+}

@@ -1,0 +1,112 @@
+import type { Product, Category } from '../types';
+
+export const CATEGORIES: Category[] = [
+  { id: '1', name: 'Кольца', slug: 'rings', sortOrder: 1 },
+  { id: '2', name: 'Серьги', slug: 'earrings', sortOrder: 2 },
+  { id: '3', name: 'Браслеты', slug: 'bracelets', sortOrder: 3 },
+  { id: '4', name: 'Цепи', slug: 'chains', sortOrder: 4 },
+  { id: '5', name: 'Подвески', slug: 'pendants', sortOrder: 5 },
+];
+
+export const PRODUCTS: Product[] = [
+  {
+    id: '1',
+    categoryId: '1',
+    title: 'Изумрудный ореол',
+    slug: 'emerald-halo',
+    description: 'Роскошное кольцо с изумрудом высшей категории в обрамлении бриллиантов.',
+    price: 148500,
+    oldPrice: 165000,
+    image: '/images/emerald_ring.png',
+    gallery: [],
+    material: 'Золото 18к',
+    size: '16.5',
+    inStock: true,
+    isNew: true,
+    isBestSeller: true,
+    isOnSale: true,
+    isHidden: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '2',
+    categoryId: '3',
+    title: 'Теннисный браслет',
+    slug: 'tennis-bracelet',
+    description: 'Классический теннисный браслет из белого золота с дорожкой из чистейших бриллиантов.',
+    price: 240000,
+    image: '/images/diamond_bracelet.png',
+    gallery: [],
+    material: 'Белое золото 18к',
+    inStock: true,
+    isNew: false,
+    isBestSeller: true,
+    isOnSale: false,
+    isHidden: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '3',
+    categoryId: '1',
+    title: 'Черный бриллиант Midnight',
+    slug: 'midnight-diamond',
+    description: 'Минималистичное кольцо с редким черным бриллиантом в матовом золоте.',
+    price: 89000,
+    image: '/images/black_diamond_ring.png',
+    gallery: [],
+    material: 'Лимонное золото 14к',
+    size: '17',
+    inStock: true,
+    isNew: true,
+    isBestSeller: false,
+    isOnSale: false,
+    isHidden: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '4',
+    categoryId: '2',
+    title: 'Обсидиановые капли',
+    slug: 'obsidian-drops',
+    description: 'Серьги ручной работы с натуральным обсидианом в серебряной оправе.',
+    price: 32000,
+    oldPrice: 45000,
+    image: '/images/obsidian_earrings.png',
+    gallery: [],
+    material: 'Серебро 925',
+    inStock: true,
+    isNew: false,
+    isBestSeller: false,
+    isOnSale: true,
+    isHidden: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '5',
+    categoryId: '4',
+    title: 'Цепь Золотой Код',
+    slug: 'gold-code-chain',
+    description: 'Массивная цепь панцирного плетения из красного золота.',
+    price: 115000,
+    image: '/images/gold_chain.png',
+    gallery: [],
+    material: 'Красное золото 14к',
+    inStock: true,
+    isNew: false,
+    isBestSeller: true,
+    isOnSale: false,
+    isHidden: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
+
+export const PVZ = [
+  { id: 'pvz_1', city: 'Москва', address: 'ул. Тверская, 12', eta: 'Завтра', price: 0 },
+  { id: 'pvz_2', city: 'Москва', address: 'Цветной бульвар, 15', eta: 'Сегодня', price: 0 },
+  { id: 'pvz_3', city: 'Санкт-Петербург', address: 'Невский пр-т, 28', eta: '2-3 дня', price: 500 },
+];

@@ -1,0 +1,249 @@
+﻿import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { CheckoutHeader } from '../components/checkout/CheckoutHeader';
+import { ContactStep } from '../components/checkout/ContactStep';
+import { DeliveryStep } from '../components/checkout/DeliveryStep';
+import { SummaryStep } from '../components/checkout/SummaryStep';
+import { OrderSuccess } from '../components/payment/OrderSuccess';
+import { useCheckoutStore, CHECKOUT_TOTAL_STEPS } from '../store/checkoutStore';
+import { useCartStore } from '../store/cartStore';
+import { useOrderStore } from '../store/orderStore';
+import { useHaptics } from '../hooks/useHaptics';
+import { api } from '../lib/api/endpoints';
+import { analytics } from '../lib/analytics';
+import { formatLeadOrderNotification, sendAdminNotification } from '../lib/telegramBot';
+
+const ADDR_MIN = 8;
+
+function shippingForTotal(total: number) {
+  return total > 50000 ? 0 : 500;
+}
+
+function phoneDigitsCount(phone: string): number {
+  return phone.replace(/\D/g, '').length;
+}
+
+export const CheckoutPage: React.FC = () => {
+  const navigate = useNavigate();
+  const haptics = useHaptics();
+  const { currentStep, setStep, contactInfo, deliveryData, resetCheckout, checkoutBuyNowItem, clearBuyNowItem } =
+    useCheckoutStore();
+  const { items, total, clearCart } = useCartStore();
+  const checkoutItems = checkoutBuyNowItem ? [checkoutBuyNowItem] : items;
+  const checkoutTotal = checkoutBuyNowItem ? checkoutBuyNowItem.product.price * checkoutBuyNowItem.quantity : total;
+  const grandTotal = checkoutTotal + shippingForTotal(checkoutTotal);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
+  const [successItemsCount, setSuccessItemsCount] = useState(0);
+
+  const hasTrackedCheckout = React.useRef(false);
+
+  useEffect(() => {
+    if (!hasTrackedCheckout.current && checkoutItems.length > 0) {
+      analytics.trackBeginCheckout(checkoutItems, checkoutTotal);
+      hasTrackedCheckout.current = true;
+    }
+  }, [checkoutItems, checkoutTotal]);
+
+  const phoneOk = phoneDigitsCount(contactInfo.phone) >= 10;
+
+  const isStepValid = (() => {
+    switch (currentStep) {
+      case 1:
+        return contactInfo.name.trim().length >= 2 && phoneOk;
+      case 2:
+        return deliveryData.address.trim().length >= ADDR_MIN;
+      case 3:
+        return true;
+      default:
+        return false;
+    }
+  })();
+
+  const deliveryOk = deliveryData.address.trim().length >= ADDR_MIN;
+  const allStepsValid = contactInfo.name.trim().length >= 2 && phoneOk && deliveryOk;
+
+  const handleSelectTab = (step: number) => {
+    if (step < 1 || step > CHECKOUT_TOTAL_STEPS) return;
+    setStep(step);
+    haptics.selection();
+    window.scrollTo(0, 0);
+  };
+
+  const validationHint = (): string => {
+    const parts: string[] = [];
+    if (contactInfo.name.trim().length < 2) parts.push('укажите имя');
+    if (!phoneOk) parts.push('укажите телефон (не меньше 10 цифр)');
+    if (!deliveryOk) parts.push('укажите адрес пункта выдачи (от 8 символов)');
+    if (parts.length === 0) return 'Проверьте данные заказа.';
+    return `Не хватает данных: ${parts.join('; ')}.`;
+  };
+
+  const handleSubmitOrder = async () => {
+    if (checkoutItems.length === 0) {
+      setOrderError('Корзина пуста. Добавьте товары и откройте оформление снова.');
+      navigate('/cart', { replace: true });
+      return;
+    }
+
+    if (!allStepsValid) {
+      setOrderError(validationHint());
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    setOrderError(null);
+    setIsSubmitting(true);
+    haptics.impactMedium();
+
+    const itemCount = checkoutItems.length;
+
+    try {
+      const orderData = {
+        items: checkoutItems.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          size: item.size,
+        })),
+        total: grandTotal,
+        contactInfo: {
+          name: contactInfo.name,
+          phone: contactInfo.phone,
+        },
+        deliveryData: {
+          ...deliveryData,
+          address: deliveryData.address,
+        },
+      };
+
+      const { orderId } = await api.orders.create(orderData);
+
+      const { addOrder } = useOrderStore.getState();
+      addOrder({
+        id: orderId,
+        status: 'awaiting_payment',
+        date: new Date().toISOString(),
+        total: grandTotal,
+        items: checkoutItems,
+        deliveryAddress: deliveryData.address,
+      });
+
+      const tg = window.Telegram?.WebApp;
+      const tgUser = tg?.initDataUnsafe?.user;
+      const notification = formatLeadOrderNotification({
+        orderId,
+        items: checkoutItems,
+        orderTotal: grandTotal,
+        contactInfo,
+        deliveryData,
+        tgUsername: tgUser?.username,
+      });
+      await sendAdminNotification(notification);
+
+      analytics.trackPurchase(orderId, grandTotal, checkoutItems);
+      if (checkoutBuyNowItem) {
+        clearBuyNowItem();
+      } else {
+        clearCart();
+      }
+      setSuccessOrderId(orderId);
+      setSuccessItemsCount(itemCount);
+      haptics.success();
+    } catch (error) {
+      haptics.error();
+      console.error('Order creation failed', error);
+      setOrderError('Не удалось отправить заявку. Проверьте соединение и попробуйте снова.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentStep < CHECKOUT_TOTAL_STEPS) {
+      setStep(currentStep + 1);
+      haptics.impactLight();
+      window.scrollTo(0, 0);
+    }
+  };
+
+  const handleContinueAfterSuccess = () => {
+    clearBuyNowItem();
+    resetCheckout();
+    navigate('/');
+  };
+
+  if (successOrderId) {
+    return <OrderSuccess orderId={successOrderId} itemsCount={successItemsCount} onContinue={handleContinueAfterSuccess} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-app-bg pb-36">
+      <CheckoutHeader currentStep={currentStep} totalSteps={CHECKOUT_TOTAL_STEPS} onSelectStep={handleSelectTab} />
+
+      <main className="relative">
+        {orderError ? (
+          <div className="mx-6 mt-4 rounded-[10px] border border-red-500/25 bg-red-500/10 px-4 py-3 text-[11px] text-app-text">
+            {orderError}
+          </div>
+        ) : null}
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -12 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            {currentStep === 1 && <ContactStep />}
+            {currentStep === 2 && <DeliveryStep />}
+            {currentStep === 3 && <SummaryStep items={checkoutItems} total={checkoutTotal} />}
+          </motion.div>
+        </AnimatePresence>
+      </main>
+
+      <div className="pointer-events-none fixed bottom-6 left-6 right-6 z-50">
+        <div className="pointer-events-auto mx-auto max-w-md rounded-[12px] border border-app-border/80 bg-app-surface-1/95 p-2 shadow-[0_20px_50px_rgba(0,0,0,0.45)] backdrop-blur-2xl">
+          {currentStep < 3 ? (
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={!isStepValid || isSubmitting}
+              className={`flex min-h-[52px] w-full items-center justify-center rounded-[10px] px-4 text-center text-[11px] font-semibold uppercase tracking-widest transition-all duration-200 ease-out ${
+                isStepValid && !isSubmitting
+                  ? 'app-button-primary active:scale-[0.98]'
+                  : 'cursor-not-allowed border border-app-border/80 bg-white/5 text-app-text-muted'
+              }`}
+            >
+              Далее
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void handleSubmitOrder()}
+              disabled={isSubmitting}
+              className={`flex min-h-[52px] w-full flex-col items-center justify-center gap-1 rounded-[10px] px-4 py-3 text-center transition-all duration-200 ease-out ${
+                allStepsValid && !isSubmitting
+                  ? 'app-button-primary active:scale-[0.98]'
+                  : !isSubmitting
+                    ? 'cursor-pointer border border-app-border/80 bg-white/5 text-app-text-muted hover:bg-white/[0.07]'
+                    : 'cursor-wait border border-app-border/80 bg-white/5 text-app-text-muted'
+              }`}
+            >
+              {isSubmitting ? (
+                <span className="animate-pulse text-[11px] font-semibold uppercase tracking-widest">Отправка…</span>
+              ) : (
+                <span className="text-[11px] font-semibold leading-tight">
+                  Оформить заказ. С вами свяжутся в ближайшее время для подтверждения и оплаты
+                </span>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

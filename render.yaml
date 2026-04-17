@@ -1,0 +1,46 @@
+services:
+  # Main App (Frontend + Admin API)
+  - type: web
+    name: luxury-boutique-app
+    env: node
+    plan: free # Can be changed to starter for more performance
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 18.0.0
+      - key: VITE_API_BASE_URL
+        fromService:
+          name: luxury-boutique-app
+          type: web
+          property: host
+        # Since the app serves itself, we can point it to itself.
+        # But VITE vars are used during BUILD, so we might need to hardcode the domain
+        # Once we know it, or use a placeholder.
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: ADMIN_IDS
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+  # Telegram Bot (Python Worker)
+  - type: worker
+    name: luxury-boutique-bot
+    env: python
+    plan: free
+    rootDir: telegram-bot
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: WEB_APP_URL
+        fromService:
+          name: luxury-boutique-app
+          type: web
+          property: host
