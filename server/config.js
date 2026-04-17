@@ -37,7 +37,7 @@ export function validateConfig() {
   if (!config.cloudinary.apiSecret) missing.push('CLOUDINARY_API_SECRET');
 
   if (missing.length) {
-    throw new Error(`Missing required env vars: ${missing.join(', ')}`);
+    console.warn(`[server] Warning! Missing required env vars: ${missing.join(', ')}. Some admin features might not work.`);
   }
 }
 
