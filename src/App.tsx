@@ -88,18 +88,22 @@ function App() {
     // ВСЕГДА сначала главная
     navigate('/', { replace: true });
 
-    // потом уже optional routing
-    if (startParam === 'store' || startParam === 'catalog') {
-      console.log('[Routing] Initializing at catalog');
-      navigate('/catalog', { replace: false });
-    } else if (startParam?.startsWith('product_')) {
-      const productId = startParam.replace('product_', '');
-      console.log('[Routing] Initializing at product (new prefix):', productId);
-      navigate(`/product/${productId}`, { replace: false });
-    } else if (startParam?.startsWith('p_')) {
-      const productId = startParam.substring(2);
-      console.log('[Routing] Initializing at product (old prefix):', productId);
-      navigate(`/product/${productId}`, { replace: false });
+    // Обрабатываем startParam с задержкой, чтобы React Router успел отрисовать Home и сохранить историю
+    if (startParam) {
+      setTimeout(() => {
+        if (startParam === 'store' || startParam === 'catalog') {
+          console.log('[Routing] Initializing at catalog');
+          navigate('/catalog');
+        } else if (startParam.startsWith('product_')) {
+          const productId = startParam.replace('product_', '');
+          console.log('[Routing] Initializing at product (new prefix):', productId);
+          navigate(`/product/${productId}`);
+        } else if (startParam.startsWith('p_')) {
+          const productId = startParam.substring(2);
+          console.log('[Routing] Initializing at product (old prefix):', productId);
+          navigate(`/product/${productId}`);
+        }
+      }, 50); // Небольшая задержка для того чтобы '/' встал в историю
     }
   }, []); // Run exactly once on mount
 
