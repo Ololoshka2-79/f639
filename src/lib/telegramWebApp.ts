@@ -9,27 +9,34 @@ export function bootstrapTelegramViewport(): void {
   try {
     tg.ready?.();
     tg.expand?.();
+
     if (tg.disableVerticalSwipes) {
       tg.disableVerticalSwipes();
     }
+    
     // Force fullscreen colors to avoid slit
     if ((tg as any).setHeaderColor) (tg as any).setHeaderColor('#ffffff');
     if ((tg as any).setBackgroundColor) (tg as any).setBackgroundColor('#ffffff');
-    
+
+    // Key fix: Set explicitly from telegram viewport height
+    if ((tg as any).viewportHeight) {
+      document.body.style.height = `${(tg as any).viewportHeight}px`;
+    }
+
+    // Re-expand slightly later to catch delayed layout
+    setTimeout(() => {
+      tg.expand?.();
+      if ((tg as any).viewportHeight) {
+        document.body.style.height = `${(tg as any).viewportHeight}px`;
+      }
+    }, 200);
+
+    // Force layout recalculation
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 300);
+
   } catch (e) {
     console.error('[Telegram] Init failed', e);
   }
-
-  const expand = () => {
-    try {
-      tg.expand?.();
-    } catch {
-      /* noop */
-    }
-  };
-
-  // Re-expand on some frames to ensure it sticks on all devices
-  requestAnimationFrame(expand);
-  window.setTimeout(expand, 100);
-  window.setTimeout(expand, 500);
 }

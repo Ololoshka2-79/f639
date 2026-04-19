@@ -3,33 +3,52 @@
 @tailwind utilities;
 
 @layer base {
-  html, body {
-    margin: 0;
-    padding: 0;
+  /* ── Fullscreen fix ──────────────────────────────────────────────────
+     Root cause of the white/black slit from Telegram dialogs:
+     safe-area-inset-top, margin-top, or padding-top on html/body/#root
+     ------------------------------------------------------------------- */
+  html {
+    margin: 0 !important;
+    padding: 0 !important;
+    /* Ensure background matches app theme so no slit colour flash */
+    background: #000;
     height: 100%;
     overflow: hidden;
   }
 
   body {
-    height: 100dvh;
+    margin: 0 !important;
+    padding: 0 !important;
+    padding-top: 0 !important;   /* override any safe-area-inset-top */
     background-color: var(--app-bg);
     color: var(--app-text);
     -webkit-tap-highlight-color: transparent;
+    height: 100%;
+    /* prevent iOS rubber-band scroll exposing the background */
+    overscroll-behavior-y: none;
   }
 
+  /* #root is fixed so it ALWAYS covers the full viewport,
+     even when Telegram injects an iframe with offset */
   #root {
-    height: 100vh;
-    height: 100dvh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     overflow-y: auto;
     overflow-x: hidden;
+    overscroll-behavior-y: none;
+    /* Allow dynamic viewport height on mobile browsers */
+    height: 100dvh;
   }
 
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
   .no-scrollbar {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 
   :root {
@@ -58,12 +77,11 @@
     --app-accent: #F0F0F0;
   }
 
-
-
   h1, h2, h3, h4, h5, h6 {
     font-family: "Playfair Display", serif;
   }
 }
+
 
 @layer components {
   .luxury-button {
@@ -71,7 +89,7 @@
     overflow: hidden;
     padding: 0.75rem 1.5rem;
     border-radius: 24px;
-    transition: all 0.2s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
     font-weight: 500;
     cursor: pointer;
   }
@@ -85,13 +103,17 @@
     overflow: hidden;
     padding: 0.75rem 1.5rem;
     border-radius: 24px;
-    transition: all 0.2s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
     font-weight: 500;
     cursor: pointer;
     background: var(--app-accent);
     color: var(--app-bg);
     border: none;
     box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+
+  .app-button-primary:active {
+    transform: scale(0.97);
   }
 
   .dark .app-button-primary {
@@ -103,7 +125,7 @@
     overflow: hidden;
     padding: 0.75rem 1.5rem;
     border-radius: 24px;
-    transition: all 0.2s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease;
     font-weight: 500;
     cursor: pointer;
     border: 1px solid var(--app-border-strong);
@@ -122,12 +144,16 @@
     border-radius: 24px;
     padding: 1rem;
     border: 1px solid var(--app-border);
-    transition: all 0.2s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease;
   }
   
   .app-card:hover {
     background-color: var(--app-surface-3);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+  }
+
+  .app-card:active {
+    transform: scale(0.98);
   }
 
   .app-ripple {
@@ -135,6 +161,15 @@
     border-radius: 9999px;
     background-color: rgba(255, 255, 255, 0.2);
     pointer-events: none;
+  }
+
+  /* Premium image fade-in */
+  .img-fade {
+    opacity: 0;
+    transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .img-fade.loaded {
+    opacity: 1;
   }
 }
 

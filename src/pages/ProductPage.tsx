@@ -85,10 +85,13 @@ export const ProductPage: React.FC = () => {
   };
 
   useEffect(() => {
+    // Premium opening feel: ensure we start at top
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    
     if (product) {
       analytics.trackViewItem(product);
     }
-  }, [product]);
+  }, [product?.id]);
 
   if (isLoading && !product) {
     return (
@@ -117,8 +120,9 @@ export const ProductPage: React.FC = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
       className="relative pb-44"
     >
       {/* Share Sheet */}

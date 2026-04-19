@@ -3,7 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <style>
+      /* Critical: prevent white slit above app in Telegram */
+      html, body { margin: 0; padding: 0; background: #000; }
+      #root { position: fixed; inset: 0; }
+    </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://api-maps.yandex.ru/2.1/?apikey=2923d5cc-ea73-4ea2-bf0d-847240c76ce8&lang=ru_RU" type="text/javascript"></script>
     <title>luxury-boutique-tma</title>
