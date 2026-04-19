@@ -190,7 +190,7 @@ app.delete('/v1/product/:id', requireAdmin, async (req, res) => {
 
 // --- Order Endpoints ---
 
-app.get('/orders', async (req, res) => {
+const handleGetOrders = async (req, res) => {
   const initData = req.headers['x-telegram-init-data'] || req.headers['x-tg-init-data'];
   const auth = validateTelegramInitData(initData, config.telegramBotToken);
 
@@ -200,14 +200,11 @@ app.get('/orders', async (req, res) => {
 
   const orders = await listOrdersByUserId(auth.user.id);
   return res.json(orders);
-});
+};
 
-app.post('/orders', async (req, res) => {
+const handlePostOrder = async (req, res) => {
   const initData = req.headers['x-telegram-init-data'] || req.headers['x-tg-init-data'];
   const auth = validateTelegramInitData(initData, config.telegramBotToken);
-
-  // We allow creating orders even without valid auth if needed, but for history we want user_id
-  // If no auth, we won't be able to provide history later.
   const userId = auth.valid ? auth.user.id : null;
 
   const { items, total, contactInfo, deliveryData } = req.body;
@@ -227,7 +224,6 @@ app.post('/orders', async (req, res) => {
   try {
     await saveOrder(newOrder);
 
-    // Guaranteed Telegram Notification
     if (config.telegramBotToken && config.adminIds.length > 0) {
       const itemsText = items
         .map((item, idx) => `${idx + 1}. ${item.title || item.productId} (x${item.quantity}) - ${item.price}₽`)
@@ -254,7 +250,6 @@ app.post('/orders', async (req, res) => {
               parse_mode: 'HTML',
             }),
           });
-          console.log(`[ORDER] Notification sent to admin ${adminId}`);
         } catch (botErr) {
           console.error(`[ORDER ERROR] Failed to notify admin ${adminId}:`, botErr.message);
         }
@@ -266,7 +261,12 @@ app.post('/orders', async (req, res) => {
     console.error('[ORDER ERROR] Failed to process order:', error);
     return res.status(500).json({ message: 'Failed to create order' });
   }
-});
+};
+
+app.get('/orders', handleGetOrders);
+app.get('/v1/orders', handleGetOrders);
+app.post('/orders', handlePostOrder);
+app.post('/v1/orders', handlePostOrder);
 
 app.use((error, _req, res, _next) => {
   if (error?.code === 'LIMIT_FILE_SIZE' || error?.message?.includes('File too large')) {
