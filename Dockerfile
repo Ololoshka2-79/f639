@@ -6,7 +6,7 @@ WORKDIR /app
 # Build-time args for Vite (baked into the bundle)
 # Default empty = use relative paths (works on any domain)
 ARG VITE_API_BASE_URL=""
-ARG VITE_API_FALLBACK_TO_MOCKS="false"
+ARG VITE_API_FALLBACK_TO_MOCKS="true"
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_API_FALLBACK_TO_MOCKS=$VITE_API_FALLBACK_TO_MOCKS
 

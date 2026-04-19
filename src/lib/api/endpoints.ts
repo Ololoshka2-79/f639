@@ -75,6 +75,8 @@ function resolveUploadCandidates(): string[] {
     apiBase ? `${apiBase}/upload` : '',
     apiBase ? `${apiBase.replace(/\/v1$/i, '')}/upload` : '',
     fallback ? `${fallback}/upload` : '',
+    '/upload',
+    '/v1/upload'
   ]
     .map((s) => s.replace(/\/{2,}/g, '/').replace('https:/', 'https://').replace('http:/', 'http://'))
     .filter(Boolean);

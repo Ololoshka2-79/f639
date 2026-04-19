@@ -10,6 +10,14 @@ export const apiClient = axios.create({
   },
 });
 
+// Reject HTML responses so that the app properly triggers fallback mocks instead of parsing index.html as data
+apiClient.interceptors.response.use((response) => {
+  if (typeof response.data === 'string' && response.data.trim().startsWith('<')) {
+    return Promise.reject(new Error('Received HTML instead of JSON. Endpoint might be missing.'));
+  }
+  return response;
+});
+
 // Request Interceptor for Telegram Auth
 apiClient.interceptors.request.use((config) => {
   const initData = window.Telegram?.WebApp?.initData;
