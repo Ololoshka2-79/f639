@@ -49,7 +49,9 @@ def _web_app_url() -> str:
         raw = "https://" + raw
     elif not raw.lower().startswith("https://"):
         log.error("WEB_APP_URL должен быть HTTPS (требование Telegram для Web App). Получено: " + raw)
-    return raw
+    # Сброс кэша Telegram через параметр версии
+    v = os.environ.get("WEB_APP_VERSION", "101")
+    return f"{raw}/?v={v}"
 
 
 @router.message(CommandStart())
