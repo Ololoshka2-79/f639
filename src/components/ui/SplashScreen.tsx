@@ -17,26 +17,38 @@ export const SplashScreen: React.FC<{ onComplete: () => void }> = ({ onComplete 
             {/* Pendant Loop (Top) */}
             <motion.circle
               cx="100"
-              cy="20"
-              r="6"
+              cy="25"
+              r="8"
               stroke="white"
-              strokeWidth="2"
+              strokeWidth="2.5"
               fill="none"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 1 }}
             />
             
-            {/* Single Stroke Heart - Left to Right Drawing */}
+            {/* Elegant Balanced Heart Lobe - Left */}
             <motion.path
-              d="M 50,60 C 20,60 20,120 20,170 C 20,230 100,260 150,230 C 190,210 210,120 210,70"
+              d="M 100,33 C 60,33 20,80 20,145 C 20,205 85,225 96,232"
               stroke="white"
               strokeWidth="4"
               strokeLinecap="round"
               fill="none"
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ duration: 2.5, ease: "easeInOut" }}
+              transition={{ duration: 2, ease: "easeInOut" }}
+            />
+            
+            {/* Elegant Balanced Heart Lobe - Right */}
+            <motion.path
+              d="M 100,33 C 140,33 180,80 180,145 C 180,205 115,225 104,232"
+              stroke="white"
+              strokeWidth="4"
+              strokeLinecap="round"
+              fill="none"
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 2, ease: "easeInOut" }}
             />
           </svg>
         </div>
