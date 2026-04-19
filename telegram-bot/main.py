@@ -84,19 +84,32 @@ async def main() -> None:
     # Установка Menu Button (кнопка слева от ввода сообщения) в режим Web App
     try:
         from aiogram.types import MenuButtonWebApp, MenuButtonDefault, WebAppInfo as BotWebAppInfo
+        from aiogram.types import BotCommand
         
-        # ОБЯЗАТЕЛЬНО сбросить старую кнопку:
-        await bot.set_chat_menu_button(menu_button=MenuButtonDefault())
+        # 1. Установка команд (меню "бургер" или список команд)
+        await bot.set_my_commands([
+            BotCommand(command="start", description="Запустить магазин")
+        ])
 
+        # 2. Описание перед началом (что видит новый пользователь)
+        await bot.set_my_description(
+            "F 63.9 — украшения с душой. Нажмите «Старт» или кнопку «Открыть», чтобы перейти в каталог."
+        )
+        await bot.set_my_short_description(
+            "F 63.9: ювелирный магазин в вашем Telegram."
+        )
+
+        # 3. ОБЯЗАТЕЛЬНО сбросить и установить кнопку Web App
+        await bot.set_chat_menu_button(menu_button=MenuButtonDefault())
         await bot.set_chat_menu_button(
             menu_button=MenuButtonWebApp(
                 text="Открыть",
                 web_app=BotWebAppInfo(url="https://f639.up.railway.app")
             )
         )
-        log.info("Menu button set to WebApp: %s", "https://f639.up.railway.app")
+        log.info("Menu button and bot commands updated")
     except Exception as e:
-        log.error("Failed to set menu button: %s", e)
+        log.error("Failed to update bot UI: %s", e)
 
     log.info("Polling started; WEB_APP_URL=%s", web_url)
     await dp.start_polling(bot)

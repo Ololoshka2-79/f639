@@ -62,6 +62,8 @@ function App() {
         isExpanded: anyTg.isExpanded,
       });
       tg.enableClosingConfirmation?.();
+      tg.expand?.();
+      tg.ready?.();
     }
 
     const tgUser = tg?.initDataUnsafe?.user;
