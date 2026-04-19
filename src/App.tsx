@@ -72,19 +72,6 @@ function App() {
       setAdminStatus(false);
     }
 
-    // Handle deep link (startapp) parameters
-    const startParam = (tg?.initDataUnsafe as any)?.start_param;
-    if (startParam) {
-      console.log('[DeepLink] Handling start_param:', startParam);
-      if (startParam === 'store' || startParam === 'catalog') {
-        navigate('/catalog');
-      } else if (startParam.startsWith('p_')) {
-        const productId = startParam.substring(2);
-        // Navigate to product page. The ProductPage handles ID-only slugs too.
-        navigate(`/product/${productId}`);
-      }
-    }
-
     setLoading(false);
     analytics.trackAppOpen();
 
@@ -92,6 +79,24 @@ function App() {
       cleanupSwipe?.();
     };
   }, [setAdminStatus, allowedIds]);
+
+  // Separate useEffect for initial routing to ensure it only runs ONCE on mount
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    const startParam = (tg?.initDataUnsafe as any)?.start_param;
+
+    if (startParam === 'store' || startParam === 'catalog') {
+      console.log('[Routing] Initializing at catalog');
+      navigate('/catalog', { replace: true });
+    } else if (startParam?.startsWith('p_')) {
+      const productId = startParam.substring(2);
+      console.log('[Routing] Initializing at product:', productId);
+      navigate(`/product/${productId}`, { replace: true });
+    } else {
+      console.log('[Routing] Initializing at home');
+      navigate('/', { replace: true });
+    }
+  }, []); // Run exactly once on mount
 
   useEffect(() => {
     if (clickCount > 0) {
