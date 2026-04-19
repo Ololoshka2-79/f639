@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -44,5 +44,5 @@ export function validateConfig() {
 }
 
 export function botTokenSecret(token) {
-  return createHash('sha256').update(token).digest();
+  return createHmac('sha256', 'WebAppData').update(token).digest();
 }
