@@ -14,7 +14,6 @@ import { OrdersPage } from './pages/Placeholders';
 import { ProfilePage } from './pages/ProfilePage';
 import { RequireCart } from './components/routing/RequireCart';
 import { bootstrapApp } from './lib/bootstrap';
-import { bootstrapTelegramViewport } from './lib/telegramWebApp';
 import { analytics } from './lib/analytics';
 import { useAdminStore } from './store/adminStore';
 import { AdminToolbar } from './components/ui/AdminToolbar';
