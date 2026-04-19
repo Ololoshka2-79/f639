@@ -27,28 +27,16 @@ export const SplashScreen: React.FC<{ onComplete: () => void }> = ({ onComplete 
               transition={{ duration: 1 }}
             />
             
-            {/* Left Lobe - Elegant Jewelry Line */}
+            {/* Single Stroke Heart - Left to Right Drawing */}
             <motion.path
-              d="M 100,26 L 100,45 C 60,45 20,90 20,150 C 20,210 80,230 92,235"
+              d="M 50,60 C 20,60 20,120 20,170 C 20,230 100,260 150,230 C 190,210 210,120 210,70"
               stroke="white"
-              strokeWidth="3"
+              strokeWidth="4"
               strokeLinecap="round"
               fill="none"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 2, ease: "easeInOut" }}
-            />
-            
-            {/* Right Lobe - Elegant Jewelry Line */}
-            <motion.path
-              d="M 100,26 L 100,45 C 140,45 180,90 180,150 C 180,210 120,230 108,235"
-              stroke="white"
-              strokeWidth="3"
-              strokeLinecap="round"
-              fill="none"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 2, ease: "easeInOut" }}
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 2.5, ease: "easeInOut" }}
             />
           </svg>
         </div>

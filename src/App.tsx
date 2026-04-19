@@ -159,7 +159,8 @@ function App() {
             {!isImmersiveProductPage && (
               <header className="absolute left-0 right-0 z-40 p-6 flex items-center justify-between pointer-events-none" style={{ top: 'calc(var(--tg-safe-top, 0px) + 30px)' }}>
                 <h1
-                  className="text-xl font-serif tracking-[0.2em] text-app-accent uppercase cursor-pointer pointer-events-auto"
+                  className="text-4xl tracking-[0.1em] text-app-accent uppercase cursor-pointer pointer-events-auto"
+                  style={{ fontFamily: '"Bodoni Moda", serif' }}
                   onClick={() => { 
                     navigate('/'); 
                     handleLogoClick(); 
