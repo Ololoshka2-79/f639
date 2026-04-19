@@ -89,15 +89,16 @@ This project is prepared for deployment on [Railway](https://railway.app/).
         *   `CLOUDINARY_CLOUD_NAME`: Your Cloudinary cloud name
         *   `CLOUDINARY_API_KEY`: Your Cloudinary API key
         *   `CLOUDINARY_API_SECRET`: Your Cloudinary API secret
-        *   `VITE_API_BASE_URL`: The public URL of your web app (e.g., `https://your-app.up.railway.app`)
+        *   `VITE_API_BASE_URL`: `https://f639.up.railway.app/v1`
+        *   `VITE_UPLOAD_BASE_URL`: `https://f639.up.railway.app/v1/upload` (опционально, если используется загрузка)
 
 2.  **Telegram Bot (Worker)**
     *   **Root Directory**: `/telegram-bot`
     *   **Build Command**: `pip install -r requirements.txt`
     *   **Start Command**: `python main.py`
     *   **Environment Variables**:
-        *   `BOT_TOKEN`: Same as `TELEGRAM_BOT_TOKEN`
-        *   `WEB_APP_URL`: The public URL of your web app
+        *   `BOT_TOKEN`: Тот же, что и выше
+        *   `WEB_APP_URL`: `https://f639.up.railway.app`
 
 ### Integration Notes:
 The project includes `railway.json` and a `Procfile` for easier configuration. Railway's Nixpacks will automatically detect the environment and build the app.
