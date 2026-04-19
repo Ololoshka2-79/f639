@@ -1,10 +1,9 @@
 import React, { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useThemeStore } from '../store/themeStore';
-import type { ThemeMode } from '../store/themeStore';
+import { useThemeStore, type ThemeMode } from '../store/themeStore';
 import { useHaptics } from '../hooks/useHaptics';
 import { useOrderStore } from '../store/orderStore';
-import { useLocation } from 'react-router-dom';
 import { useProfileNavStore } from '../store/profileNavStore';
 import {
   MapPin,
@@ -15,11 +14,13 @@ import {
   MessageCircle,
   Copy,
   Check,
+  Package,
 } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
   const { mode, setMode } = useThemeStore();
   const { savedAddresses } = useOrderStore();
+  const navigate = useNavigate();
   const location = useLocation();
   const haptics = useHaptics();
   const subScreen = useProfileNavStore((s) => s.subScreen);
@@ -55,6 +56,7 @@ export const ProfilePage: React.FC = () => {
   };
 
   const menuItems = [
+    { id: 'orders', icon: <Package size={20} />, label: 'История заказов', count: null },
     { id: 'address', icon: <MapPin size={20} />, label: 'Адреса доставки', count: savedAddresses.length },
     { id: 'help', icon: <MessageCircle size={20} />, label: 'Помощь', count: null },
   ];
@@ -113,6 +115,8 @@ export const ProfilePage: React.FC = () => {
             onClick={() => {
               if (item.id === 'help') {
                 handleOpenSupport();
+              } else if (item.id === 'orders') {
+                navigate('/orders');
               } else {
                 openSubScreen(item.id);
               }

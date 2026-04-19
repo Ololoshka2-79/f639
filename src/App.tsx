@@ -10,7 +10,7 @@ import { CartScreen } from './features/cart/CartScreen';
 import { CatalogPage } from './pages/CatalogPage';
 import { ProductPage } from './pages/ProductPage';
 import { CheckoutPage } from './pages/CheckoutPage';
-import { OrdersPage } from './pages/Placeholders';
+import { OrdersPage } from './pages/OrdersPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { RequireCart } from './components/routing/RequireCart';
 import { analytics } from './lib/analytics';

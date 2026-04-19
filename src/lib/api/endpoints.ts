@@ -194,19 +194,17 @@ export const api = {
   orders: {
     /** Заказ создаётся всегда локально при сбое API (статический деплой без бэкенда). */
     create: async (orderData: unknown) => {
-      try {
-        const response = await apiClient.post<{ orderId?: string; id?: string }>('/orders', orderData, {
-          timeout: 25_000,
-        });
-        const raw = response.data;
-        const orderId = raw?.orderId ?? raw?.id ?? `order-${Date.now()}`;
-        return { orderId };
-      } catch (err) {
-        console.warn('[API] orders.create failed, using client-side order id', err);
-        return {
-          orderId: `order-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
-        };
-      }
+      const response = await apiClient.post<{ orderId?: string; id?: string }>('/orders', orderData, {
+        timeout: 40_000,
+      });
+      const raw = response.data;
+      const orderId = raw?.orderId ?? raw?.id;
+      if (!orderId) throw new Error('Failed to create order: No orderId returned');
+      return { orderId };
+    },
+    list: async () => {
+      const response = await apiClient.get<any[]>('/orders');
+      return response.data;
     },
     getStatus: async (id: string) => {
       try {

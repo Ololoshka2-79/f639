@@ -13,6 +13,8 @@ import {
   removeProductById,
   upsertProduct,
 } from './productRepository.js';
+import { saveOrder, listOrdersByUserId } from './orderRepository.js';
+import { validateTelegramInitData } from './telegramAuth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -184,6 +186,86 @@ app.delete('/v1/product/:id', requireAdmin, async (req, res) => {
 
   await removeProductById(productId);
   return res.status(204).send();
+});
+
+// --- Order Endpoints ---
+
+app.get('/orders', async (req, res) => {
+  const initData = req.headers['x-telegram-init-data'] || req.headers['x-tg-init-data'];
+  const auth = validateTelegramInitData(initData, config.telegramBotToken);
+
+  if (!auth.valid) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const orders = await listOrdersByUserId(auth.user.id);
+  return res.json(orders);
+});
+
+app.post('/orders', async (req, res) => {
+  const initData = req.headers['x-telegram-init-data'] || req.headers['x-tg-init-data'];
+  const auth = validateTelegramInitData(initData, config.telegramBotToken);
+
+  // We allow creating orders even without valid auth if needed, but for history we want user_id
+  // If no auth, we won't be able to provide history later.
+  const userId = auth.valid ? auth.user.id : null;
+
+  const { items, total, contactInfo, deliveryData } = req.body;
+  const orderId = `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`.toUpperCase();
+
+  const newOrder = {
+    id: orderId,
+    user_id: userId,
+    status: 'new',
+    items,
+    total,
+    contactInfo,
+    deliveryData,
+    created_at: new Date().toISOString(),
+  };
+
+  try {
+    await saveOrder(newOrder);
+
+    // Guaranteed Telegram Notification
+    if (config.telegramBotToken && config.adminIds.length > 0) {
+      const itemsText = items
+        .map((item, idx) => `${idx + 1}. ${item.title || item.productId} (x${item.quantity}) - ${item.price}₽`)
+        .join('\n');
+
+      const message =
+        `<b>🛍 Новый заказ #${orderId}</b>\n\n` +
+        `<b>👤 Клиент:</b> ${contactInfo?.name || '—'}\n` +
+        `<b>📞 Телефон:</b> ${contactInfo?.phone || '—'}\n` +
+        `<b>📍 Адрес:</b> ${deliveryData?.address || '—'}\n\n` +
+        `<b>📦 Товары:</b>\n${itemsText}\n\n` +
+        `<b>💰 Итого:</b> ${total}₽\n\n` +
+        `<i>Заказ успешно сохранен в базе.</i>`;
+
+      for (const adminId of config.adminIds) {
+        try {
+          const tgUrl = `https://api.telegram.org/bot${config.telegramBotToken}/sendMessage`;
+          await fetch(tgUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: adminId,
+              text: message,
+              parse_mode: 'HTML',
+            }),
+          });
+          console.log(`[ORDER] Notification sent to admin ${adminId}`);
+        } catch (botErr) {
+          console.error(`[ORDER ERROR] Failed to notify admin ${adminId}:`, botErr.message);
+        }
+      }
+    }
+
+    return res.status(201).json({ id: orderId, orderId });
+  } catch (error) {
+    console.error('[ORDER ERROR] Failed to process order:', error);
+    return res.status(500).json({ message: 'Failed to create order' });
+  }
 });
 
 app.use((error, _req, res, _next) => {

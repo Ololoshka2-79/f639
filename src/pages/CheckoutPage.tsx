@@ -105,6 +105,8 @@ export const CheckoutPage: React.FC = () => {
       const orderData = {
         items: checkoutItems.map((item) => ({
           productId: item.productId,
+          title: item.product.title,
+          price: item.product.price,
           quantity: item.quantity,
           size: item.size,
         })),
@@ -133,18 +135,6 @@ export const CheckoutPage: React.FC = () => {
 
       // ✅ Сохраняем адрес в историю адресов (Bug fix)
       addSavedAddress(deliveryData.address);
-
-      const tg = window.Telegram?.WebApp;
-      const tgUser = tg?.initDataUnsafe?.user;
-      const notification = formatLeadOrderNotification({
-        orderId,
-        items: checkoutItems,
-        orderTotal: grandTotal,
-        contactInfo,
-        deliveryData,
-        tgUsername: tgUser?.username,
-      });
-      await sendAdminNotification(notification);
 
       analytics.trackPurchase(orderId, grandTotal, checkoutItems);
       if (checkoutBuyNowItem) {
