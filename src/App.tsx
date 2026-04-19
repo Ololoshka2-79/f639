@@ -73,7 +73,7 @@ function App() {
     }
 
     // Handle deep link (startapp) parameters
-    const startParam = tg?.initDataUnsafe?.start_param;
+    const startParam = (tg?.initDataUnsafe as any)?.start_param;
     if (startParam) {
       console.log('[DeepLink] Handling start_param:', startParam);
       if (startParam === 'store' || startParam === 'catalog') {
