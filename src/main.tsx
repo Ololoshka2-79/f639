@@ -9,6 +9,11 @@ import { TelegramRouter } from './components/routing/TelegramRouter';
 import { bootstrapTelegramViewport } from './lib/telegramWebApp';
 import { bootstrapApp } from './lib/bootstrap';
 
+console.log("ENTRY CHECK", {
+  href: window.location.href,
+  userAgent: navigator.userAgent,
+});
+
 bootstrapTelegramViewport();
 bootstrapApp();
 

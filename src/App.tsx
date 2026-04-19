@@ -29,10 +29,29 @@ function App() {
   
   // Guard against browser mode (missing initData)
   if (!tg?.initData) {
+    const botUsername = import.meta.env.VITE_BOT_USERNAME || 'f_639_bot';
+    const appLink = `https://t.me/${botUsername}/open`;
+
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-app-bg p-8 text-center">
-        <h2 className="mb-4 font-serif text-2xl text-app-text">Пожалуйста, откройте приложение через Telegram</h2>
-        <p className="text-sm text-app-text-muted">Это необходимо для корректной работы магазина и вашей безопасности.</p>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#000] p-8 text-center text-white">
+        <div className="mb-8 h-20 w-20 rounded-full border-2 border-white/20 flex items-center justify-center">
+          <span className="text-4xl">💎</span>
+        </div>
+        <h2 className="mb-4 font-serif text-2xl uppercase tracking-widest">Открыть магазин</h2>
+        <p className="mb-8 text-sm text-white/60 leading-relaxed">
+          Пожалуйста, откройте это приложение через официальный Mini App в Telegram для полноценного опыта.
+        </p>
+        
+        <a 
+          href={appLink}
+          className="rounded-full bg-white px-8 py-4 text-xs font-bold uppercase tracking-widest text-black transition-transform active:scale-95"
+        >
+          Запустить в Telegram
+        </a>
+
+        <div className="mt-12 text-[10px] text-white/20 font-mono uppercase tracking-[0.2em]">
+          Browsers are not supported for luxury experience
+        </div>
       </div>
     );
   }
@@ -41,64 +60,37 @@ function App() {
   const location = useLocation();
   const navigationType = useNavigationType();
 
-  // ❗ CRITICAL: Force expand at the very first React lifecycle moment.
-  // This fires BEFORE any other effects and is essential for inline-button WebView context.
+  // 🚨 1. ПОЛНАЯ ДИАГНОСТИКА TELEGRAM CONTEXT
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
-    if (!tg) return;
-    tg.ready?.();
-    tg.expand?.();
-    // Wave 2: next tick (catches cases where viewport isn't ready yet)
-    setTimeout(() => tg.expand?.(), 0);
-    // Wave 3: after first layout (catches slow iOS WebView)
-    setTimeout(() => tg.expand?.(), 150);
+    console.log("🔥 TELEGRAM INIT DEBUG", {
+      exists: !!tg,
+      platform: tg?.platform,
+      version: tg?.version,
+      initData: tg?.initData,
+      initDataUnsafe: tg?.initDataUnsafe,
+      startParam: (tg?.initDataUnsafe as any)?.start_param,
+    });
+    
+    if (!tg || !tg.initData) {
+      console.warn("⚠️ NOT A VALID TELEGRAM WEBAPP CONTEXT");
+    }
   }, []);
 
   useEffect(() => {
     syncRouteStack(location.pathname, navigationType);
   }, [location.pathname, navigationType]);
+
   const [clickCount, setClickCount] = useState(0);
   const { setAdminStatus, allowedIds } = useAdminStore();
 
   useEffect(() => {
-    let cleanupSwipe: (() => void) | undefined;
-    const anyTg = tg as any;
-
-    console.log('WEBAPP CHECK', {
-      hasWebApp: !!window.Telegram?.WebApp,
-      initData: window.Telegram?.WebApp?.initData,
-      platform: (window.Telegram?.WebApp as any)?.platform,
-    });
-
-    console.log('TELEGRAM OPEN CONTEXT', {
-      url: window.location.href,
-      ref: document.referrer,
-      tg: tg,
-      initData: tg?.initData,
-      start_param: (tg?.initDataUnsafe as any)?.start_param,
-    });
-
-    console.log('LAUNCH MODE DEBUG', {
-      href: window.location.href,
-      initData: anyTg?.initData,
-      initDataUnsafe: anyTg?.initDataUnsafe,
-      platform: anyTg?.platform,
-      version: anyTg?.version,
-      isExpanded: anyTg?.isExpanded,
-    });
-    
-    tg?.enableClosingConfirmation?.();
-    
-    // Force fullscreen expansion (additional waves after mount cascade)
-    tg?.expand?.();
-    
-    // Recovery attempt after React paint settles
-    const expandTimer = setTimeout(() => {
-      tg?.expand?.();
-      console.log('[WebApp] Recovery expand called');
-    }, 150);
-
-    tg?.ready?.();
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      tg.enableClosingConfirmation?.();
+    }
 
     const tgUser = tg?.initDataUnsafe?.user;
     const isAllowedAdmin = tgUser && allowedIds.includes(tgUser.id.toString());
@@ -110,33 +102,30 @@ function App() {
 
     setLoading(false);
     analytics.trackAppOpen();
+  }, [setAdminStatus, allowedIds]);
 
-    return () => {
-      clearTimeout(expandTimer);
-      cleanupSwipe?.();
-    };
-  }, [setAdminStatus, allowedIds, tg]);
-
-  // Separate useEffect for initial routing to ensure it only runs ONCE on mount
+  // 2. Улучшенная логика начальной маршрутизации (без мерцания)
   useEffect(() => {
+    const tg = window.Telegram?.WebApp;
     const startParam = (tg?.initDataUnsafe as any)?.start_param;
 
-    // ❗ ВСЕГДА сначала главная
-    navigate('/', { replace: true });
-
-    // только после этого — ручная маршрутизация
-    setTimeout(() => {
-      if (startParam && startParam.startsWith('product_')) {
-        const productId = startParam.replace('product_', '');
-        console.log('[Routing] Initializing at product (new prefix):', productId);
-        navigate(`/product/${productId}`, { replace: true });
-      } else if (startParam && startParam.startsWith('p_')) {
-        const productId = startParam.substring(2);
-        console.log('[Routing] Initializing at product (old prefix):', productId);
-        navigate(`/product/${productId}`, { replace: true });
+    if (startParam) {
+      if (startParam.startsWith('product_')) {
+        const id = startParam.replace('product_', '');
+        navigate(`/product/${id}`, { replace: true });
+        return;
+      } 
+      if (startParam.startsWith('p_')) {
+        const id = startParam.substring(2);
+        navigate(`/product/${id}`, { replace: true });
+        return;
       }
-    }, 0);
-  }, []); // Run exactly once on mount
+    }
+
+    if (location.pathname === '/' || location.pathname === '/index.html') {
+      navigate('/', { replace: true });
+    }
+  }, []);
 
   // Sync Safe Areas from Telegram
   useEffect(() => {
@@ -186,7 +175,7 @@ function App() {
   const [debugOverlay, setDebugOverlay] = useState(false);
 
   return (
-    <div className="h-[var(--tg-height,100vh)] w-full text-app-text transition-colors duration-500 overflow-x-hidden relative">
+    <div className="min-h-[var(--tg-height,100vh)] w-full text-app-text transition-colors duration-500 overflow-x-hidden relative">
       <ThemeManager />
       <AdminToolbar />
       <AnimatePresence>
