@@ -25,7 +25,7 @@ except ImportError:
 
 from aiogram import Bot, Dispatcher, Router
 from aiogram.enums import ParseMode
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, CommandObject
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo, CallbackQuery
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -51,20 +51,42 @@ def _web_app_url() -> str:
     return f"{raw}/"
 
 
-@router.message(CommandStart())
-async def cmd_start(message: Message, bot: Bot) -> None:
-    # 🎯 ПРИНУДИТЕЛЬНЫЙ ВЫЗОВ: только через /start или startapp
-    log.info("IS_START_CONTEXT: %s", message.text.startswith("/start") if message.text else False)
-    log.info("IS_WEBAPP_CONTEXT: %s", bool(getattr(message, "web_app_data", None)))
-    
-    clean_url = (os.environ.get("WEB_APP_URL") or DEFAULT_WEB_APP_URL).strip().rstrip("/")
-    # Добавляем слэш в конце, если его нет, так как BotFather часто ожидает именно такой формат
-    if not clean_url.endswith("/"):
-        clean_url += "/"
+@router.message(CommandStart(deep_link=True))
+async def start_with_param(message: Message, command: CommandObject):
+    """
+    🎯 ОБРАБОТКА startapp В БОТЕ (ОБЯЗАТЕЛЬНО)
+    """
+    param = command.args or "home"
+    log.info("Processing startapp with param: %s", param)
+
+    # Параметризованная ссылка на приложение
+    base_url = _web_app_url()
+    web_url = f"{base_url}?startapp={param}"
 
     button = InlineKeyboardButton(
-        text="Открыть магазин 💎",
-        web_app=WebAppInfo(url=clean_url)
+        text="Открыть",
+        web_app=WebAppInfo(url=web_url)
+    )
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[[button]])
+
+    await message.answer("Открыть приложение", reply_markup=kb)
+
+
+@router.message(CommandStart())
+async def cmd_start(message: Message, bot: Bot) -> None:
+    """
+    🚀 ЗАМЕНИТЬ ВСЕ КНОПКИ НА startapp DEEP LINK
+    """
+    bot_info = await bot.get_me()
+    bot_username = bot_info.username or "f_639_bot"
+    
+    # Прямая ссылка на Mini App запуск
+    start_app_url = f"https://t.me/{bot_username}?startapp=home"
+
+    button = InlineKeyboardButton(
+        text="Открыть",
+        url=start_app_url
     )
     
     kb = InlineKeyboardMarkup(
@@ -76,17 +98,28 @@ async def cmd_start(message: Message, bot: Bot) -> None:
         reply_markup=kb, 
         parse_mode=ParseMode.HTML
     )
-    log.info("SENT WEBAPP BUTTON IN START CONTEXT.")
+
 
 @router.message()
-async def debug_all(message: Message):
-    # Логгируем все входящие, но НЕ отправляем WebApp кнопки для обычных сообщений
+async def debug_all(message: Message, bot: Bot):
+    # Логгируем все входящие
     log.info("RAW MESSAGE UPDATE: %s", message)
-    log.info("IS_START_CONTEXT: False (Caught in fallback)")
-    log.info("IS_WEBAPP_CONTEXT: %s", bool(getattr(message, "web_app_data", None)))
     
     if message.text and not message.text.startswith("/"):
-        await message.answer("Используйте /start или кнопку в меню для открытия магазина.")
+        bot_info = await bot.get_me()
+        bot_username = bot_info.username or "f_639_bot"
+        start_app_url = f"https://t.me/{bot_username}?startapp=home"
+
+        button = InlineKeyboardButton(
+            text="Открыть",
+            url=start_app_url
+        )
+        kb = InlineKeyboardMarkup(inline_keyboard=[[button]])
+
+        await message.answer(
+            "Пожалуйста, используйте кнопку для входа в приложение:", 
+            reply_markup=kb
+        )
 
 @router.callback_query()
 async def debug_callback(call: CallbackQuery):
@@ -105,30 +138,9 @@ async def main() -> None:
     dp = Dispatcher()
     dp.include_router(router)
 
-    # Установка Menu Button
-    try:
-        from aiogram.types import MenuButtonWebApp, MenuButtonDefault, WebAppInfo as BotWebAppInfo
-        from aiogram.types import BotCommand
-        
-        await bot.set_my_commands([
-            BotCommand(command="start", description="Запустить магазин")
-        ])
-
-        # Для кнопки меню используем ЧИСТЫЙ URL (как в BotFather)
-        clean_url = (os.environ.get("WEB_APP_URL") or DEFAULT_WEB_APP_URL).strip().rstrip("/")
-        
-        menu_btn = MenuButtonWebApp(
-            text="Открыть",
-            web_app=BotWebAppInfo(url=clean_url)
-        )
-        
-        await bot.set_chat_menu_button(menu_button=MenuButtonDefault())
-        await asyncio.sleep(0.5)
-        await bot.set_chat_menu_button(menu_button=menu_btn)
-        
-        log.info("Menu button updated with clean URL: %s", clean_url)
-    except Exception as e:
-        log.error("Failed to update bot UI: %s", e)
+    # Бот теперь не управляет кнопками и командами программно,
+    # чтобы использовать только настройки из BotFather.
+    log.info("Bot commands and menu button management removed.")
 
     log.info("Polling started. Final URL check: %s", repr(_web_app_url()))
     await dp.start_polling(bot)
