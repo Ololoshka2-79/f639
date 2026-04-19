@@ -87,10 +87,10 @@ async def main() -> None:
         await bot.set_chat_menu_button(
             menu_button=MenuButtonWebApp(
                 text="Открыть",
-                web_app=BotWebAppInfo(url=web_url)
+                web_app=BotWebAppInfo(url="https://f639.up.railway.app")
             )
         )
-        log.info("Menu button set to WebApp: %s", web_url)
+        log.info("Menu button set to WebApp: %s", "https://f639.up.railway.app")
     except Exception as e:
         log.error("Failed to set menu button: %s", e)
 
