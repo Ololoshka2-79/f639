@@ -3,19 +3,18 @@
  * при открытии по inline-кнопке web_app иногда первый expand срабатывает до готовности viewport.
  */
 export function bootstrapTelegramViewport(): void {
-  const tg = window.Telegram?.WebApp;
+  const tg = (window as any).Telegram?.WebApp;
   if (!tg) return;
 
   function setAppHeight() {
     const height = tg.viewportHeight;
     document.documentElement.style.setProperty('--tg-height', `${height}px`);
-    // Also explicitly set on body to be sure
     document.body.style.height = `${height}px`;
     
     console.log('[Telegram Diagnostics]', {
       innerHeight: window.innerHeight,
       tgViewport: tg.viewportHeight,
-      tgStableHeight: (tg as any).viewportStableHeight
+      tgStableHeight: tg.viewportStableHeight
     });
   }
 
@@ -35,7 +34,7 @@ export function bootstrapTelegramViewport(): void {
     setAppHeight();
 
     // Listen for changes (keyboard open, etc)
-    tg.onEvent('viewportChanged', () => {
+    tg.onEvent?.('viewportChanged', () => {
       setAppHeight();
       // Force scroll to top to prevent "floating" layout
       window.scrollTo(0, 0);

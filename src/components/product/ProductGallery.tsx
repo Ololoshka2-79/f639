@@ -9,7 +9,6 @@ interface ProductGalleryProps {
 
 const FULLSCREEN_TRANSITION = { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const };
 const MAX_SCALE = 4;
-const MIN_SCALE = 1;
 
 // ── High Performance Gesture Handler (Direct DOM, 60fps) ─────────────
 function usePinchZoom() {
@@ -145,7 +144,7 @@ function usePinchZoom() {
     }
   };
 
-  const onDoubleTap = (e: React.MouseEvent) => {
+  const onDoubleTap = (_e: React.MouseEvent) => {
     if (stateRef.current.scale > 1) {
       reset();
     } else {
@@ -158,7 +157,7 @@ function usePinchZoom() {
 }
 
 const FullscreenZoomImage: React.FC<{ src: string; onSwipeDown: () => void }> = ({ src, onSwipeDown }) => {
-  const { imgRef, containerRef, onPointerDown, onPointerMove, onPointerUp, onDoubleTap, reset } = usePinchZoom();
+  const { imgRef, containerRef, onPointerDown, onPointerMove, onPointerUp, onDoubleTap } = usePinchZoom();
   const haptics = useHaptics();
 
   // Optimize URL for viewer
