@@ -63,13 +63,14 @@ export const OrdersPage: React.FC = () => {
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
-    if (tg?.BackButton) {
-      tg.BackButton.show();
+    const bb = tg?.BackButton;
+    if (bb) {
+      bb.show();
       const handleBack = () => navigate(-1);
-      tg.BackButton.onClick(handleBack);
+      bb.onClick(handleBack);
       return () => {
-        tg.BackButton.offClick(handleBack);
-        tg.BackButton.hide();
+        bb.offClick(handleBack);
+        bb.hide();
       };
     }
   }, [navigate]);
