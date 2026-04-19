@@ -132,15 +132,6 @@ export const HomeScreen: React.FC = () => {
           >
             {homeHeroTitle}
           </h2>
-          <div
-            className="mt-1 text-[8px] text-app-text-muted uppercase tracking-widest font-bold flex items-center gap-1 cursor-pointer group/btn"
-            onClick={() => {
-              haptics.impactLight();
-              navigate('/catalog');
-            }}
-          >
-            Explore <ChevronRight size={10} className="group-hover/btn:translate-x-1 transition-transform" />
-          </div>
         </div>
 
         {editMode && (
