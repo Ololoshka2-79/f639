@@ -12,9 +12,11 @@ export function bootstrapTelegramViewport(): void {
     if (tg.disableVerticalSwipes) {
       tg.disableVerticalSwipes();
     }
-    // Also set some colors for seamless look
-    tg.headerColor = tg.colorScheme === 'dark' ? '#000000' : '#FFFFFF';
-    tg.backgroundColor = tg.colorScheme === 'dark' ? '#000000' : '#FFFFFF';
+    
+    // Force fullscreen colors to avoid slit
+    if (tg.setHeaderColor) tg.setHeaderColor('#ffffff');
+    if (tg.setBackgroundColor) tg.setBackgroundColor('#ffffff');
+    
   } catch (e) {
     console.error('[Telegram] Init failed', e);
   }

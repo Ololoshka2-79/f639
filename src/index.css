@@ -4,15 +4,24 @@
 
 @layer base {
   html, body {
-    height: 100%;
     margin: 0;
     padding: 0;
-    overflow-x: hidden;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    height: 100dvh;
+    background-color: var(--app-bg);
+    color: var(--app-text);
+    -webkit-tap-highlight-color: transparent;
   }
 
   #root {
-    min-height: 100%;
-    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .no-scrollbar::-webkit-scrollbar {
@@ -49,11 +58,7 @@
     --app-accent: #F0F0F0;
   }
 
-  body {
-    background-color: var(--app-bg);
-    color: var(--app-text);
-    -webkit-tap-highlight-color: transparent;
-  }
+
 
   h1, h2, h3, h4, h5, h6 {
     font-family: "Playfair Display", serif;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import type { Product } from '../../types';
 import { formatCurrency } from '../../lib/utils';
 import { Heart, ShoppingBag } from 'lucide-react';
@@ -21,6 +21,8 @@ const badgeBase =
 const dividerClass = 'border-b border-neutral-500/[0.14] dark:border-neutral-400/[0.12]';
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
+  const [activeSlide, setActiveSlide] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const addItem = useCartStore((state) => state.addItem);
   const updateProduct = useProductStore((state) => state.updateProduct);
   const { editMode } = useAdminStore();
@@ -52,6 +54,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
 
   if (product.isHidden && !editMode) return null;
 
+  const sortedImages = React.useMemo(() => {
+    if (!product.images || product.images.length === 0) return [];
+    return [...product.images].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }, [product.images]);
+
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollLeft, clientWidth } = scrollRef.current;
+    if (clientWidth === 0) return;
+    const active = Math.round(scrollLeft / clientWidth);
+    if (active !== activeSlide) setActiveSlide(active);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -66,10 +81,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
       <div className="relative w-full shrink-0 overflow-hidden rounded-[10px] bg-[#f5f5f5] aspect-[4/5] dark:bg-[#141414]">
         {/* Horizontal Swiper */}
         <div 
+          ref={scrollRef}
+          onScroll={handleScroll}
           className="flex h-full w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden no-scrollbar"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {(!product.images || product.images.length === 0) ? (
+          {sortedImages.length === 0 ? (
             <div className="h-full w-full shrink-0 snap-center">
                <img
                 src={product.image}
@@ -78,7 +95,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
               />
             </div>
           ) : (
-            product.images.map((img, idx) => (
+            sortedImages.map((img, idx) => (
               <div key={`${img.public_id}-${idx}`} className="h-full w-full shrink-0 snap-center">
                 <img
                   loading="lazy"
@@ -92,16 +109,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
         </div>
 
         {/* Swiper Dots */}
-        {product.images?.length > 1 && (
+        {sortedImages.length > 1 && (
           <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1.5 px-2 py-1 rounded-full bg-black/20 backdrop-blur-sm">
-            {product.images.map((_, idx) => (
+            {sortedImages.map((_, idx) => (
               <div 
                 key={idx} 
-                className="h-1 w-1 rounded-full bg-white/60 transition-all duration-300 first:bg-white first:w-2"
-                style={{ 
-                  // In a real swiper we'd track active index, but for native scroll we rely on first being visually active initially
-                  // To be fully senior, we could add a scroll listener, but CSS scroll-snap is a great start.
-                }}
+                className={`h-1 transition-all duration-300 rounded-full ${activeSlide === idx ? 'w-2 bg-white' : 'w-1 bg-white/60'}`}
               />
             ))}
           </div>

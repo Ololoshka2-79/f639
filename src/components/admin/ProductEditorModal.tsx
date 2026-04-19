@@ -1,4 +1,4 @@
-import { X, Plus, Trash2, ImagePlus } from 'lucide-react';
+import { X, Plus, Trash2, ImagePlus, ArrowLeft, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useRef, type FC } from 'react';
 import type { Product, Category } from '../../types';
@@ -52,10 +52,10 @@ export const ProductEditorModal: FC<ProductEditorModalProps> = ({
       // Ensure images array exists
       if (!rest.images || rest.images.length === 0) {
         rest.images = [];
-        if (rest.image) rest.images.push({ url: rest.image, public_id: rest.image_public_id || '' });
+        if (rest.image) rest.images.push({ url: rest.image, public_id: rest.image_public_id || '', order: 0 });
         if (rest.gallery) {
            rest.gallery.forEach((url, i) => {
-             rest.images.push({ url, public_id: rest.gallery_public_ids?.[i] || '' });
+             rest.images.push({ url, public_id: rest.gallery_public_ids?.[i] || '', order: i + 1 });
            });
         }
       }
@@ -98,8 +98,9 @@ export const ProductEditorModal: FC<ProductEditorModalProps> = ({
 
   const removePhotoAt = (index: number) => {
     setFormData((prev) => {
-      const nextImages = [...prev.images];
+      let nextImages = [...prev.images];
       nextImages.splice(index, 1);
+      nextImages = nextImages.map((img, idx) => ({ ...img, order: idx }));
       
       return {
         ...prev,
@@ -107,6 +108,26 @@ export const ProductEditorModal: FC<ProductEditorModalProps> = ({
         // Sync legacy fields
         image: nextImages[0]?.url || '',
         gallery: nextImages.slice(1).map(i => i.url)
+      };
+    });
+  };
+
+  const moveImage = (index: number, direction: number) => {
+    setFormData((prev) => {
+      const nextImages = [...prev.images];
+      const targetIndex = index + direction;
+      
+      if (targetIndex < 0 || targetIndex >= nextImages.length) return prev;
+      
+      [nextImages[index], nextImages[targetIndex]] = [nextImages[targetIndex], nextImages[index]];
+      
+      const reordered = nextImages.map((img, idx) => ({ ...img, order: idx }));
+      
+      return {
+        ...prev,
+        images: reordered,
+        image: reordered[0]?.url || '',
+        gallery: reordered.slice(1).map(i => i.url)
       };
     });
   };
@@ -123,7 +144,8 @@ export const ProductEditorModal: FC<ProductEditorModalProps> = ({
         Array.from(files).map((file) => api.admin.uploadImage(file))
       );
       setFormData((prev) => {
-        const nextImages = [...prev.images, ...uploaded.map(item => ({ url: item.url, public_id: item.public_id }))];
+        let nextImages = [...prev.images, ...uploaded.map(item => ({ url: item.url, public_id: item.public_id, order: 0 }))];
+        nextImages = nextImages.map((img, idx) => ({ ...img, order: idx }));
         return { 
           ...prev, 
           images: nextImages,
@@ -332,16 +354,45 @@ export const ProductEditorModal: FC<ProductEditorModalProps> = ({
                             Обложка
                           </span>
                         ) : null}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            haptics.impactLight();
-                            removePhotoAt(idx);
-                          }}
-                          className="absolute inset-0 flex items-center justify-center bg-red-500/80 opacity-0 transition-opacity group-hover:opacity-100"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <div className="absolute inset-0 flex items-center justify-between opacity-0 transition-opacity group-hover:opacity-100">
+                          {idx > 0 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                haptics.impactLight();
+                                moveImage(idx, -1);
+                              }}
+                              className="h-full bg-black/40 px-1 hover:bg-black/80"
+                            >
+                              <ArrowLeft size={16} className="text-white" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              haptics.impactLight();
+                              removePhotoAt(idx);
+                            }}
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500/80 m-auto hover:bg-red-500"
+                          >
+                            <Trash2 size={16} className="text-white" />
+                          </button>
+                          {idx < formData.images.length - 1 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                haptics.impactLight();
+                                moveImage(idx, 1);
+                              }}
+                              className="h-full bg-black/40 px-1 hover:bg-black/80"
+                            >
+                              <ArrowRight size={16} className="text-white" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                     <button

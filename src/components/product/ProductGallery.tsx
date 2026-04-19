@@ -75,48 +75,52 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     }
   };
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollLeft, clientWidth } = scrollRef.current;
+    if (clientWidth === 0) return;
+    const active = Math.round(scrollLeft / clientWidth);
+    if (active !== currentIndex) setCurrentIndex(active);
+  };
+
   const fullscreenSrc = images[activeImageIndex] ?? images[0];
 
   return (
     <div className="group relative aspect-[4/5] w-full overflow-hidden bg-app-bg">
-      <AnimatePresence mode="wait">
-        <motion.img
-          key={currentIndex}
-          initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.98 }}
-          transition={{ duration: 0.35 }}
-          src={images[currentIndex]}
-          alt={`Product ${currentIndex + 1}`}
-          aria-label="Открыть фото"
-          role="button"
-          tabIndex={0}
-          onClick={() => openFullscreenViewer(images, currentIndex)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              openFullscreenViewer(images, currentIndex);
-            }
-          }}
-          className="h-full w-full cursor-zoom-in object-cover"
-        />
-      </AnimatePresence>
-
-      <div className="absolute inset-y-0 left-0 z-10 w-1/4 cursor-pointer" onClick={handlePrev} />
-      <div className="absolute inset-y-0 right-0 z-10 w-1/4 cursor-pointer" onClick={handleNext} />
-
-      <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center gap-2">
-        {images.map((_, i) => (
-          <div
-            key={i}
-            className={`h-1 rounded-full transition-all duration-300 ${
-              currentIndex === i ? 'w-6 bg-app-accent' : 'w-1.5 bg-white/30'
-            }`}
-          />
+      <div 
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex h-full w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden no-scrollbar"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {images.map((src, i) => (
+          <div key={`gallery-img-${i}`} className="h-full w-full shrink-0 snap-center relative">
+            <img
+              src={src}
+              alt={`Product ${i + 1}`}
+              onClick={() => openFullscreenViewer(images, i)}
+              className="h-full w-full cursor-zoom-in object-cover pb-12"
+            />
+          </div>
         ))}
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-app-bg to-transparent" />
+
+      {images.length > 1 && (
+        <div className="absolute bottom-10 left-0 right-0 z-20 flex justify-center gap-2">
+          {images.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                currentIndex === i ? 'w-6 bg-app-accent' : 'w-2 bg-white/40'
+              }`}
+            />
+          ))}
+        </div>
+      )}
 
       <AnimatePresence>
         {isFullscreen && fullscreenSrc && (

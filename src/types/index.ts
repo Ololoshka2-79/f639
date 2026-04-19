@@ -27,6 +27,7 @@ export interface Product {
   images: {
     url: string;
     public_id: string;
+    order: number;
   }[];
   isNew: boolean;
   isBestSeller: boolean;

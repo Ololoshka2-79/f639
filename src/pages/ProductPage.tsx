@@ -211,7 +211,7 @@ export const ProductPage: React.FC = () => {
       <ProductGallery 
         images={
           product.images && product.images.length > 0 
-            ? product.images.map(img => img.url) 
+            ? [...product.images].sort((a,b) => (a.order ?? 0) - (b.order ?? 0)).map(img => img.url) 
             : [product.image, ...(product.gallery ?? [])]
         } 
       />

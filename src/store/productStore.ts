@@ -103,11 +103,13 @@ export const useProductStore = create<ProductStore>()(
           if (!Array.isArray(images) || images.length === 0) {
             images = [];
             if (prod.image) {
-              images.push({ url: prod.image, public_id: (prod as any).image_public_id || '' });
+              images.push({ url: prod.image, public_id: (prod as any).image_public_id || '', order: 0 });
             }
             gallery.forEach((url, i) => {
-              images.push({ url, public_id: gallery_public_ids[i] || '' });
+              images.push({ url, public_id: gallery_public_ids[i] || '', order: i + 1 });
             });
+          } else {
+            images = images.map((img: any, idx: number) => ({ ...img, order: img.order ?? idx }));
           }
 
           return {
