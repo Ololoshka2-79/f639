@@ -86,6 +86,20 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: "Playfair Display", serif;
   }
+
+  /* Neon Glow Effects */
+  .neon-text-white {
+    color: #fff;
+    text-shadow: 
+      0 0 5px rgba(255, 255, 255, 0.8),
+      0 0 10px rgba(255, 255, 255, 0.5),
+      0 0 20px rgba(255, 255, 255, 0.3);
+  }
+
+  .neon-stroke-white {
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.8)) 
+            drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
+  }
 }
 
 
