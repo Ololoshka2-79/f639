@@ -6,6 +6,26 @@ export const ContactStep: React.FC = () => {
   const { contactInfo, setContactInfo } = useCheckoutStore();
 
   const handleChange = (field: string, value: string) => {
+    if (field === 'phone') {
+      let cleaned = value.replace(/[^+0-9]/g, '');
+      
+      // Ensure it starts with +7
+      if (!cleaned.startsWith('+')) {
+        cleaned = '+' + cleaned;
+      }
+      if (!cleaned.startsWith('+7')) {
+        // If they try to delete the 7, put it back or if they type something else after +
+        cleaned = '+7' + cleaned.substring(1).replace('7', '');
+      }
+      
+      // Simple logic: if empty or just '+', make it '+7'
+      if (cleaned === '+' || cleaned === '') {
+        cleaned = '+7';
+      }
+
+      setContactInfo({ [field]: cleaned });
+      return;
+    }
     setContactInfo({ [field]: value });
   };
 
@@ -34,9 +54,12 @@ export const ContactStep: React.FC = () => {
           <Phone className="absolute left-4 top-4 text-app-text-muted" size={18} />
           <input
             type="tel"
-            placeholder="+7 (___) ___ __ __"
-            value={contactInfo.phone}
+            placeholder="+7 (999) 000-00-00"
+            value={contactInfo.phone || '+7'}
             onChange={(e) => handleChange('phone', e.target.value)}
+            onFocus={(e) => {
+              if (!e.target.value) handleChange('phone', '+7');
+            }}
             className="w-full rounded-[12px] border border-app-border/80 bg-app-surface-1 py-4 pl-12 pr-4 text-sm text-app-text transition-colors duration-200 focus:border-app-border-strong focus:bg-app-surface-3/50 focus:outline-none"
           />
         </div>

@@ -85,18 +85,35 @@ function App() {
     const tg = window.Telegram?.WebApp;
     const startParam = (tg?.initDataUnsafe as any)?.start_param;
 
+    // ВСЕГДА сначала главная
+    navigate('/', { replace: true });
+
+    // потом уже optional routing
     if (startParam === 'store' || startParam === 'catalog') {
       console.log('[Routing] Initializing at catalog');
-      navigate('/catalog', { replace: true });
+      navigate('/catalog', { replace: false });
+    } else if (startParam?.startsWith('product_')) {
+      const productId = startParam.replace('product_', '');
+      console.log('[Routing] Initializing at product (new prefix):', productId);
+      navigate(`/product/${productId}`, { replace: false });
     } else if (startParam?.startsWith('p_')) {
       const productId = startParam.substring(2);
-      console.log('[Routing] Initializing at product:', productId);
-      navigate(`/product/${productId}`, { replace: true });
-    } else {
-      console.log('[Routing] Initializing at home');
-      navigate('/', { replace: true });
+      console.log('[Routing] Initializing at product (old prefix):', productId);
+      navigate(`/product/${productId}`, { replace: false });
     }
   }, []); // Run exactly once on mount
+
+  // Sync Safe Areas from Telegram
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      const safeTop = (tg as any).contentSafeAreaInset?.top || (tg as any).safeAreaInset?.top || 0;
+      const safeBottom = (tg as any).contentSafeAreaInset?.bottom || (tg as any).safeAreaInset?.bottom || 0;
+      
+      document.documentElement.style.setProperty('--tg-safe-top', `${safeTop}px`);
+      document.documentElement.style.setProperty('--tg-safe-area-inset-bottom', `${safeBottom}px`);
+    }
+  }, []);
 
   useEffect(() => {
     if (clickCount > 0) {

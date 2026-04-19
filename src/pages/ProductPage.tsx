@@ -174,7 +174,7 @@ export const ProductPage: React.FC = () => {
       </AnimatePresence>
 
       {/* Top Navigation */}
-      <div className="absolute left-0 right-0 z-30 px-6 flex items-center justify-between pointer-events-none" style={{ top: 'calc(var(--tg-safe-top, 0px) + 16px)' }}>
+      <div className="absolute left-0 right-0 z-30 px-6 flex items-center justify-between pointer-events-none" style={{ top: 'calc(var(--tg-safe-top, 0px) + 60px)' }}>
         <div className="h-10 w-10 flex-shrink-0 pointer-events-none" aria-hidden />
         <div className="flex gap-3 pointer-events-auto">
           <button 
