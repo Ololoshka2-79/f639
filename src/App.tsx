@@ -65,8 +65,8 @@ function App() {
     const tg = window.Telegram?.WebApp;
     console.log("🔥 TELEGRAM INIT DEBUG", {
       exists: !!tg,
-      platform: tg?.platform,
-      version: tg?.version,
+      platform: (tg as any)?.platform,
+      version: (tg as any)?.version,
       initData: tg?.initData,
       initDataUnsafe: tg?.initDataUnsafe,
       startParam: (tg?.initDataUnsafe as any)?.start_param,
@@ -87,8 +87,8 @@ function App() {
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
     if (tg) {
-      tg.ready();
-      tg.expand();
+      tg.ready?.();
+      tg.expand?.();
       tg.enableClosingConfirmation?.();
     }
 
