@@ -40,13 +40,6 @@ export const useProductStore = create<ProductStore>()(
           }
 
           const newProduct: Product = {
-            image: '',
-            gallery: [],
-            gallery_public_ids: [],
-            images: [],
-            isNew: true,
-            isBestSeller: false,
-            isHidden: false,
             ...productData,
             id,
             createdAt: (productData as any).createdAt || new Date().toISOString(),

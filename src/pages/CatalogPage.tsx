@@ -41,6 +41,7 @@ export const CatalogPage: React.FC = () => {
         categoryId: selectedCategory || categories[0]?.id || '1',
         image: 'https://images.unsplash.com/photo-1605100804763-247f66156ce4?auto=format&fit=crop&q=80',
         gallery: [],
+        images: [{ url: 'https://images.unsplash.com/photo-1605100804763-247f66156ce4?auto=format&fit=crop&q=80', public_id: '' }],
         material: 'Золото',
         inStock: true,
         isNew: true,
