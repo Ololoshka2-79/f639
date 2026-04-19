@@ -7,7 +7,22 @@ export function bootstrapTelegramViewport(): void {
   if (!tg) return;
 
   tg.ready();
-  tg.expand();
+  
+  // 🚀 КАСКАДНЫЙ EXPAND: Пытаемся раскрыть приложение несколько раз, чтобы «дожать» Telegram
+  const forceExpand = () => {
+    tg.expand?.();
+    if (!(tg as any).isExpanded) {
+      setTimeout(() => tg.expand?.(), 100);
+      setTimeout(() => tg.expand?.(), 500);
+      setTimeout(() => tg.expand?.(), 1000);
+    }
+  };
+
+  forceExpand();
+  window.addEventListener('load', forceExpand);
+  tg.onEvent?.('viewportChanged', (data: any) => {
+    if (!data.isStateStable) forceExpand();
+  });
 
   // Базовые стили
   if (tg.setHeaderColor) tg.setHeaderColor('#ffffff');

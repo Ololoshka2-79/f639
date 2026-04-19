@@ -88,7 +88,11 @@ function App() {
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready?.();
+      // Агрессивный каскад
       tg.expand?.();
+      setTimeout(() => tg.expand?.(), 200);
+      setTimeout(() => tg.expand?.(), 500);
+      
       tg.enableClosingConfirmation?.();
     }
 
