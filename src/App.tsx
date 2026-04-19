@@ -52,13 +52,14 @@ function App() {
     let cleanupSwipe: (() => void) | undefined;
 
     if (tg) {
+      const anyTg = tg as any;
       console.log('LAUNCH MODE DEBUG', {
         href: window.location.href,
-        initData: tg.initData,
-        initDataUnsafe: tg.initDataUnsafe,
-        platform: tg.platform,
-        version: tg.version,
-        isExpanded: tg.isExpanded,
+        initData: anyTg.initData,
+        initDataUnsafe: anyTg.initDataUnsafe,
+        platform: anyTg.platform,
+        version: anyTg.version,
+        isExpanded: anyTg.isExpanded,
       });
       tg.enableClosingConfirmation?.();
     }
