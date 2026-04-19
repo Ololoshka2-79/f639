@@ -16,23 +16,23 @@ export const ProductGrid: React.FC = () => {
 
   const sourceProducts = isFavorites ? favoriteItems : allProducts;
 
-  const filteredProducts = sourceProducts?.filter(product => {
-    const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory || product.categoryId === selectedCategory;
-    const matchesMaterial = !filters.material || product.material?.toLowerCase().includes(filters.material.toLowerCase());
-    const matchesPrice = (!filters.minPrice || product.price >= filters.minPrice) && 
-                         (!filters.maxPrice || product.price <= filters.maxPrice);
-    
-    // Also respect isHidden
-    const isVisible = !product.isHidden;
-
-    return matchesSearch && matchesCategory && matchesMaterial && matchesPrice && isVisible;
-  }).sort((a, b) => {
-    if (sortBy === 'price_asc') return a.price - b.price;
-    if (sortBy === 'price_desc') return b.price - a.price;
-    if (sortBy === 'new') return a.isNew ? -1 : 1;
-    return 0; // Default: popular
-  });
+  const filteredProducts = React.useMemo(() => {
+    return sourceProducts?.filter(product => {
+      const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = !selectedCategory || product.categoryId === selectedCategory;
+      const matchesMaterial = !filters.material || product.material?.toLowerCase().includes(filters.material.toLowerCase());
+      const matchesPrice = (!filters.minPrice || product.price >= filters.minPrice) && 
+                           (!filters.maxPrice || product.price <= filters.maxPrice);
+      
+      const isVisible = !product.isHidden;
+      return matchesSearch && matchesCategory && matchesMaterial && matchesPrice && isVisible;
+    }).sort((a, b) => {
+      if (sortBy === 'price_asc') return a.price - b.price;
+      if (sortBy === 'price_desc') return b.price - a.price;
+      if (sortBy === 'new') return a.isNew ? -1 : 1;
+      return 0;
+    });
+  }, [sourceProducts, searchQuery, selectedCategory, filters, sortBy]);
 
   if (!filteredProducts?.length) {
     return (

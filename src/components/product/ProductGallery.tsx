@@ -11,152 +11,193 @@ const FULLSCREEN_TRANSITION = { duration: 0.28, ease: [0.22, 1, 0.36, 1] as cons
 const MAX_SCALE = 4;
 const MIN_SCALE = 1;
 
-// ── Pinch-to-zoom logic (native touch, no library needed) ──────────────
+// ── High Performance Gesture Handler (Direct DOM, 60fps) ─────────────
 function usePinchZoom() {
-  const scaleRef = useRef(1);
-  const originRef = useRef({ x: 0, y: 0 });
-  const lastPinchDistRef = useRef<number | null>(null);
-  const pointerCacheRef = useRef<PointerEvent[]>([]);
-  const imgRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-  const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  const stateRef = useRef({
+    scale: 1,
+    x: 0,
+    y: 0,
+    lastPinchDist: 0,
+    lastPoint: { x: 0, y: 0 },
+    pointers: new Map<number, PointerEvent>(),
+    isAnimating: false,
+    swipeY: 0,
+    startTime: 0,
+    startY: 0
+  });
 
-  const reset = useCallback(() => {
-    scaleRef.current = 1;
-    setScale(1);
-    setTranslate({ x: 0, y: 0 });
-    lastPinchDistRef.current = null;
-  }, []);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    pointerCacheRef.current.push(e.nativeEvent);
+  const updateDOM = useCallback(() => {
     if (!imgRef.current) return;
-    imgRef.current.setPointerCapture(e.pointerId);
-  }, []);
-
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    const cache = pointerCacheRef.current;
-    // update cache
-    const idx = cache.findIndex((ev) => ev.pointerId === e.pointerId);
-    if (idx >= 0) cache[idx] = e.nativeEvent;
-
-    if (cache.length < 2) {
-      // single-finger pan (only when zoomed)
-      if (scaleRef.current > 1) {
-        setTranslate((prev) => ({
-          x: prev.x + e.movementX,
-          y: prev.y + e.movementY,
-        }));
+    const { scale, x, y, swipeY } = stateRef.current;
+    
+    // Use translate3d for GPU acceleration
+    // Combine pinch translate and swipeY
+    const ty = y + swipeY;
+    imgRef.current.style.transform = `translate3d(${x}px, ${ty}px, 0) scale(${scale})`;
+    
+    // Visual feedback for swipe
+    if (swipeY > 0 && scale <= 1) {
+      const opacity = Math.max(0.2, 1 - swipeY / 400);
+      if (containerRef.current) {
+        containerRef.current.style.opacity = opacity.toString();
       }
-      return;
+    } else if (containerRef.current) {
+      containerRef.current.style.opacity = '1';
     }
-
-    // two-finger pinch
-    const [p1, p2] = cache;
-    const dist = Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY);
-
-    if (lastPinchDistRef.current === null) {
-      lastPinchDistRef.current = dist;
-      originRef.current = {
-        x: (p1.clientX + p2.clientX) / 2,
-        y: (p1.clientY + p2.clientY) / 2,
-      };
-      return;
-    }
-
-    const ratio = dist / lastPinchDistRef.current;
-    lastPinchDistRef.current = dist;
-    const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scaleRef.current * ratio));
-    scaleRef.current = next;
-    setScale(next);
+    
+    stateRef.current.isAnimating = false;
   }, []);
 
-  const onPointerUp = useCallback((e: React.PointerEvent) => {
-    pointerCacheRef.current = pointerCacheRef.current.filter(
-      (ev) => ev.pointerId !== e.pointerId
-    );
-    if (pointerCacheRef.current.length < 2) {
-      lastPinchDistRef.current = null;
+  const requestUpdate = useCallback(() => {
+    if (!stateRef.current.isAnimating) {
+      stateRef.current.isAnimating = true;
+      requestAnimationFrame(updateDOM);
     }
-    if (scaleRef.current <= 1.05) reset();
-  }, [reset]);
+  }, [updateDOM]);
 
-  // Double-tap to toggle zoom
-  const lastTapRef = useRef(0);
-  const onDoubleTap = useCallback((e: React.MouseEvent) => {
-    const now = Date.now();
-    if (now - lastTapRef.current < 300) {
-      if (scaleRef.current > 1) {
-        reset();
+  const reset = useCallback((animate = true) => {
+    stateRef.current.scale = 1;
+    stateRef.current.x = 0;
+    stateRef.current.y = 0;
+    stateRef.current.swipeY = 0;
+    if (animate && imgRef.current) {
+      imgRef.current.style.transition = 'transform 0.3s cubic-bezier(0.2, 0, 0.2, 1)';
+    }
+    requestUpdate();
+    setTimeout(() => {
+      if (imgRef.current) imgRef.current.style.transition = '';
+    }, 300);
+  }, [requestUpdate]);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    const { pointers } = stateRef.current;
+    pointers.set(e.pointerId, e.nativeEvent);
+    stateRef.current.startTime = Date.now();
+    stateRef.current.startY = e.clientY;
+
+    if (pointers.size === 1) {
+      stateRef.current.lastPoint = { x: e.clientX, y: e.clientY };
+    } else if (pointers.size === 2) {
+      const pts = Array.from(pointers.values());
+      stateRef.current.lastPinchDist = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
+    }
+    
+    if (imgRef.current) {
+      imgRef.current.setPointerCapture(e.pointerId);
+      imgRef.current.style.transition = ''; // Disable transitions during move
+    }
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    const { pointers, scale, lastPoint, lastPinchDist } = stateRef.current;
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, e.nativeEvent);
+
+    if (pointers.size === 1) {
+      const dx = e.clientX - lastPoint.x;
+      const dy = e.clientY - lastPoint.y;
+      
+      if (scale > 1) {
+        stateRef.current.x += dx;
+        stateRef.current.y += dy;
+        requestUpdate();
       } else {
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        const cx = e.clientX - rect.left - rect.width / 2;
-        const cy = e.clientY - rect.top - rect.height / 2;
-        scaleRef.current = 2.5;
-        setScale(2.5);
-        setTranslate({ x: -cx * 0.8, y: -cy * 0.8 });
+        // Swipe down logic
+        const sdy = e.clientY - stateRef.current.startY;
+        if (sdy > 0) {
+          stateRef.current.swipeY = sdy;
+          requestUpdate();
+        }
+      }
+      stateRef.current.lastPoint = { x: e.clientX, y: e.clientY };
+    } else if (pointers.size === 2) {
+      const pts = Array.from(pointers.values());
+      const dist = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
+      const ratio = dist / lastPinchDist;
+      
+      const newScale = Math.min(MAX_SCALE, Math.max(0.5, scale * ratio));
+      stateRef.current.scale = newScale;
+      stateRef.current.lastPinchDist = dist;
+      requestUpdate();
+    }
+  };
+
+  const onPointerUp = (e: React.PointerEvent, onSwipeDown: () => void) => {
+    const { pointers, scale, swipeY, startTime } = stateRef.current;
+    pointers.delete(e.pointerId);
+    
+    if (pointers.size === 0) {
+      const duration = Date.now() - startTime;
+      const velocity = swipeY / duration;
+
+      if (scale <= 1) {
+        if (swipeY > 150 || (swipeY > 50 && velocity > 0.5)) {
+          onSwipeDown();
+        } else {
+          reset();
+        }
+      } else if (scale < 1.1) {
+        reset();
       }
     }
-    lastTapRef.current = now;
-  }, [reset]);
+  };
 
-  return { imgRef, scale, translate, reset, onPointerDown, onPointerMove, onPointerUp, onDoubleTap };
+  const onDoubleTap = (e: React.MouseEvent) => {
+    if (stateRef.current.scale > 1) {
+      reset();
+    } else {
+      stateRef.current.scale = 2.5;
+      requestUpdate();
+    }
+  };
+
+  return { imgRef, containerRef, onPointerDown, onPointerMove, onPointerUp, onDoubleTap, reset };
 }
 
-// ── Fullscreen pinch overlay ───────────────────────────────────────────
 const FullscreenZoomImage: React.FC<{ src: string; onSwipeDown: () => void }> = ({ src, onSwipeDown }) => {
-  const { imgRef, scale, translate, reset, onPointerDown, onPointerMove, onPointerUp, onDoubleTap } = usePinchZoom();
+  const { imgRef, containerRef, onPointerDown, onPointerMove, onPointerUp, onDoubleTap, reset } = usePinchZoom();
   const haptics = useHaptics();
-  const startYRef = useRef<number | null>(null);
 
-  const handlePointerDownCombined = useCallback((e: React.PointerEvent) => {
-    onPointerDown(e);
-    if (scale <= 1) startYRef.current = e.clientY;
-  }, [onPointerDown, scale]);
-
-  const handlePointerUpCombined = useCallback((e: React.PointerEvent) => {
-    onPointerUp(e);
-    if (startYRef.current !== null && scale <= 1) {
-      const dy = e.clientY - startYRef.current;
-      if (dy > 80) {
-        haptics.impactLight();
-        onSwipeDown();
-      }
-    }
-    startYRef.current = null;
-  }, [onPointerUp, scale, onSwipeDown, haptics]);
+  // Optimize URL for viewer
+  const optimizedSrc = src.includes('cloudinary') 
+    ? src.replace('/upload/', '/upload/f_auto,q_auto,w_1600,c_limit/') 
+    : src;
 
   return (
     <div
-      ref={imgRef}
+      ref={containerRef}
       className="flex items-center justify-center w-full h-full select-none"
-      style={{ touchAction: scale > 1 ? 'none' : 'pan-y' }}
-      onPointerDown={handlePointerDownCombined}
+      style={{ touchAction: 'none' }}
+      onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={handlePointerUpCombined}
-      onClick={onDoubleTap}
+      onPointerUp={(e) => onPointerUp(e, onSwipeDown)}
+      onPointerCancel={(e) => onPointerUp(e, onSwipeDown)}
+      onClick={(e) => {
+        const now = Date.now();
+        if ((window as any)._lastTap && now - (window as any)._lastTap < 300) {
+          onDoubleTap(e);
+          haptics.impactLight();
+        }
+        (window as any)._lastTap = now;
+      }}
     >
       <img
-        src={src}
+        ref={imgRef}
+        src={optimizedSrc}
         alt=""
         draggable={false}
-        className="max-h-[calc(0.9*var(--tg-height,100vh))] max-w-full w-auto object-contain"
+        className="max-h-[calc(0.9*var(--tg-height,100vh))] max-w-full w-auto object-contain will-change-transform"
         style={{
-          transform: `scale(${scale}) translate(${translate.x / scale}px, ${translate.y / scale}px)`,
-          transition: scale === 1 ? 'transform 0.3s cubic-bezier(0.22,1,0.36,1)' : 'none',
-          willChange: 'transform',
           userSelect: 'none',
           pointerEvents: 'none',
         }}
+        onLoad={(e) => {
+          (e.target as HTMLImageElement).classList.add('loaded');
+        }}
       />
-      {scale > 1 && (
-        <button
-          className="absolute top-4 right-4 z-10 px-3 py-1.5 rounded-full bg-black/50 text-white text-[10px] font-bold uppercase tracking-wider"
-          onClick={(e) => { e.stopPropagation(); reset(); }}
-        >
-          Сбросить
-        </button>
-      )}
     </div>
   );
 };
@@ -218,6 +259,21 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
   };
 
   const fullscreenSrc = images[activeImageIndex] ?? images[0];
+
+  // Preload neighboring images
+  useEffect(() => {
+    if (!isFullscreen || !images.length) return;
+    const preload = (index: number) => {
+      if (images[index]) {
+        const img = new Image();
+        img.src = images[index].includes('cloudinary') 
+          ? images[index].replace('/upload/', '/upload/f_auto,q_auto,w_1600,c_limit/') 
+          : images[index];
+      }
+    };
+    preload(activeImageIndex + 1);
+    preload(activeImageIndex - 1);
+  }, [isFullscreen, activeImageIndex, images]);
 
   if (!images.length) return null;
 

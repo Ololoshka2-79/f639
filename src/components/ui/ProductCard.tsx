@@ -83,25 +83,53 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
         <div 
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex h-full w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden no-scrollbar"
+          className="flex h-full w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden no-scrollbar bg-app-surface-1"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          onMouseEnter={() => {
+            // Preload full size image when hovering
+            const img = new Image();
+            img.src = product.image.includes('cloudinary') 
+              ? product.image.replace('/upload/', '/upload/f_auto,q_auto,w_1200,c_limit/') 
+              : product.image;
+          }}
         >
           {sortedImages.length === 0 ? (
-            <div className="h-full w-full shrink-0 snap-center">
+            <div className="h-full w-full shrink-0 snap-center relative">
+               {/* LQIP Placeholder */}
+               <div className="absolute inset-0 bg-app-surface-3 animate-pulse" />
                <img
-                src={product.image}
+                src={product.image.includes('cloudinary') ? product.image.replace('/upload/', '/upload/w_10,blur_1000,f_auto,q_auto/') : product.image}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover blur-sm opacity-50"
+              />
+               <img
+                src={product.image.includes('cloudinary') ? product.image.replace('/upload/', '/upload/w_600,c_scale,q_auto,f_auto/') : product.image}
                 alt={product.title}
-                className="h-full w-full object-cover object-center transition-transform duration-[280ms] ease-out group-hover:scale-[1.03]"
+                loading="eager"
+                onLoad={(e) => {
+                  (e.target as HTMLImageElement).style.opacity = '1';
+                  const parent = (e.target as HTMLImageElement).parentElement;
+                  if (parent?.firstChild) (parent.firstChild as HTMLElement).style.display = 'none';
+                }}
+                className="relative h-full w-full object-cover object-center transition-all duration-[400ms] ease-out group-hover:scale-[1.03] opacity-0"
               />
             </div>
           ) : (
             sortedImages.map((img, idx) => (
-              <div key={`${img.public_id}-${idx}`} className="h-full w-full shrink-0 snap-center">
+              <div key={`${img.public_id}-${idx}`} className="h-full w-full shrink-0 snap-center relative">
+                <div className="absolute inset-0 bg-app-surface-3 animate-pulse" />
                 <img
-                  loading="lazy"
-                  src={img.url.includes('cloudinary') ? img.url.replace('/upload/', '/upload/w_600,c_scale,q_auto,f_auto/') : img.url}
+                  loading={idx === 0 ? "eager" : "lazy"}
+                  src={img.url.includes('cloudinary') 
+                    ? img.url.replace('/upload/', idx === 0 ? '/upload/w_600,c_scale,q_auto,f_auto/' : '/upload/w_400,c_scale,q_auto,f_auto/') 
+                    : img.url}
                   alt={`${product.title} - ${idx + 1}`}
-                  className="h-full w-full object-cover object-center transition-transform duration-[280ms] ease-out group-hover:scale-[1.03]"
+                  onLoad={(e) => {
+                    (e.target as HTMLImageElement).style.opacity = '1';
+                    const parent = (e.target as HTMLImageElement).parentElement;
+                    if (parent?.firstChild) (parent.firstChild as HTMLElement).style.display = 'none';
+                  }}
+                  className="relative h-full w-full object-cover object-center transition-all duration-[400ms] ease-out group-hover:scale-[1.03] opacity-0"
                 />
               </div>
             ))
