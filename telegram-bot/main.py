@@ -61,17 +61,28 @@ async def cmd_start(message: Message, bot: Bot) -> None:
     log.info("IS_WEBAPP_CONTEXT: %s", bool(getattr(message, "web_app_data", None)))
     
     web_url = _web_app_url()
+    # 🎯 Используем ПРЯМУЮ ссылку на приложение (t.me/bot/app), чтобы было на весь экран с кнопкой свернуть
+    bot_user = (await bot.get_me()).username
+    app_short_name = "app" # По умолчанию, если вы не переопределили в BotFather
+    direct_link = f"https://t.me/{bot_user}/{app_short_name}"
+    
     button = InlineKeyboardButton(
-        text="Открыть",
-        web_app=WebAppInfo(url=web_url)
+        text="Открыть магазин 💎",
+        url=direct_link
     )
     
     kb = InlineKeyboardMarkup(
         inline_keyboard=[[button]]
     )
     
+    # Текст с прямой ссылкой
+    welcome_text = (
+        f"{WELCOME_HTML}\n\n"
+        f"🔗 Быстрый вход: {direct_link}"
+    )
+    
     await message.answer(
-        WELCOME_HTML, 
+        welcome_text, 
         reply_markup=kb, 
         parse_mode=ParseMode.HTML
     )
@@ -113,20 +124,19 @@ async def main() -> None:
             BotCommand(command="start", description="Запустить магазин")
         ])
 
-        # Используем ПОЛНОСТЬЮ идентичный URL для Menu Button
-        web_url = _web_app_url()
-        log.info("MENU BUTTON URL EXACT (repr): %s", repr(web_url))
-
+        # Для кнопки меню используем ЧИСТЫЙ URL (как в BotFather)
+        clean_url = (os.environ.get("WEB_APP_URL") or DEFAULT_WEB_APP_URL).strip().rstrip("/")
+        
         menu_btn = MenuButtonWebApp(
             text="Открыть",
-            web_app=BotWebAppInfo(url=web_url)
+            web_app=BotWebAppInfo(url=clean_url)
         )
         
         await bot.set_chat_menu_button(menu_button=MenuButtonDefault())
         await asyncio.sleep(0.5)
         await bot.set_chat_menu_button(menu_button=menu_btn)
         
-        log.info("Menu button updated with: %s", menu_btn.model_dump())
+        log.info("Menu button updated with clean URL: %s", clean_url)
     except Exception as e:
         log.error("Failed to update bot UI: %s", e)
 
