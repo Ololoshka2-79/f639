@@ -8,12 +8,16 @@ export function bootstrapTelegramViewport(): void {
 
   function setAppHeight() {
     const height = tg.viewportHeight;
+    const safeTop = tg.contentSafeAreaInset?.top || tg.safeAreaInset?.top || 0;
+    
     document.documentElement.style.setProperty('--tg-height', `${height}px`);
+    document.documentElement.style.setProperty('--tg-safe-top', `${safeTop}px`);
     document.body.style.height = `${height}px`;
     
     console.log('[Telegram Diagnostics]', {
       innerHeight: window.innerHeight,
       tgViewport: tg.viewportHeight,
+      tgSafeTop: safeTop,
       tgStableHeight: tg.viewportStableHeight
     });
   }

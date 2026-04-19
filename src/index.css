@@ -48,6 +48,7 @@
   }
 
   :root {
+    --tg-safe-top: 0px;
     --app-bg: #FFFFFF;
     --app-surface-1: #F6F6F6;
     --app-surface-2: #EEEEEE;

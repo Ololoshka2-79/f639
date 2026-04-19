@@ -110,7 +110,7 @@ function App() {
       {!loading && (
         <>
           {!isImmersiveProductPage && (
-            <header className="absolute top-0 left-0 right-0 z-40 p-6 pt-20 flex items-center justify-between pointer-events-none">
+            <header className="absolute left-0 right-0 z-40 p-6 flex items-center justify-between pointer-events-none" style={{ top: 'calc(var(--tg-safe-top, 0px) + 8px)' }}>
               <h1
                 className="text-xl font-serif tracking-[0.2em] text-app-accent uppercase cursor-pointer pointer-events-auto"
                 onClick={() => { navigate('/'); handleLogoClick(); }}
@@ -126,7 +126,10 @@ function App() {
           )}
 
           {/* Main Content */}
-          <main className={isImmersiveProductPage ? '' : 'pt-32'}>
+          <main 
+            className={isImmersiveProductPage ? '' : ''} 
+            style={{ paddingTop: isImmersiveProductPage ? '0' : 'calc(var(--tg-safe-top, 0px) + 80px)' }}
+          >
             <Suspense
               fallback={
                 <div className="px-6 py-24 text-center text-sm text-app-text-muted font-serif">
