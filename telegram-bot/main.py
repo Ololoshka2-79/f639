@@ -47,11 +47,8 @@ def _web_app_url() -> str:
     raw = (os.environ.get("WEB_APP_URL") or DEFAULT_WEB_APP_URL).strip().rstrip("/")
     if not raw.lower().startswith("http"):
         raw = "https://" + raw
-    elif not raw.lower().startswith("https://"):
-        log.error("WEB_APP_URL должен быть HTTPS (требование Telegram для Web App). Получено: " + raw)
-    # Сброс кэша Telegram через параметр версии
-    v = os.environ.get("WEB_APP_VERSION", "102")
-    return f"{raw}/?v={v}"
+    # Всегда добавляем слэш в конце для нативности
+    return f"{raw}/"
 
 
 @router.message(CommandStart())
@@ -60,29 +57,22 @@ async def cmd_start(message: Message, bot: Bot) -> None:
     log.info("IS_START_CONTEXT: %s", message.text.startswith("/start") if message.text else False)
     log.info("IS_WEBAPP_CONTEXT: %s", bool(getattr(message, "web_app_data", None)))
     
-    web_url = _web_app_url()
-    # 🎯 Используем ПРЯМУЮ ссылку на приложение (t.me/bot/app), чтобы было на весь экран с кнопкой свернуть
-    bot_user = (await bot.get_me()).username
-    app_short_name = "app" # По умолчанию, если вы не переопределили в BotFather
-    direct_link = f"https://t.me/{bot_user}/{app_short_name}"
-    
+    clean_url = (os.environ.get("WEB_APP_URL") or DEFAULT_WEB_APP_URL).strip().rstrip("/")
+    # Добавляем слэш в конце, если его нет, так как BotFather часто ожидает именно такой формат
+    if not clean_url.endswith("/"):
+        clean_url += "/"
+
     button = InlineKeyboardButton(
         text="Открыть магазин 💎",
-        url=direct_link
+        web_app=WebAppInfo(url=clean_url)
     )
     
     kb = InlineKeyboardMarkup(
         inline_keyboard=[[button]]
     )
     
-    # Текст с прямой ссылкой
-    welcome_text = (
-        f"{WELCOME_HTML}\n\n"
-        f"🔗 Быстрый вход: {direct_link}"
-    )
-    
     await message.answer(
-        welcome_text, 
+        WELCOME_HTML, 
         reply_markup=kb, 
         parse_mode=ParseMode.HTML
     )
