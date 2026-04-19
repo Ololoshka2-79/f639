@@ -85,25 +85,21 @@ function App() {
     const tg = window.Telegram?.WebApp;
     const startParam = (tg?.initDataUnsafe as any)?.start_param;
 
-    // ВСЕГДА сначала главная
-    navigate('/', { replace: true });
-
-    // Обрабатываем startParam с задержкой, чтобы React Router успел отрисовать Home и сохранить историю
-    if (startParam) {
-      setTimeout(() => {
-        if (startParam === 'store' || startParam === 'catalog') {
-          console.log('[Routing] Initializing at catalog');
-          navigate('/catalog');
-        } else if (startParam.startsWith('product_')) {
-          const productId = startParam.replace('product_', '');
-          console.log('[Routing] Initializing at product (new prefix):', productId);
-          navigate(`/product/${productId}`);
-        } else if (startParam.startsWith('p_')) {
-          const productId = startParam.substring(2);
-          console.log('[Routing] Initializing at product (old prefix):', productId);
-          navigate(`/product/${productId}`);
-        }
-      }, 50); // Небольшая задержка для того чтобы '/' встал в историю
+    // Инициализация маршрутизации
+    if (startParam === 'store' || startParam === 'catalog') {
+      console.log('[Routing] Initializing at catalog');
+      navigate('/catalog', { replace: true });
+    } else if (startParam && startParam.startsWith('product_')) {
+      const productId = startParam.replace('product_', '');
+      console.log('[Routing] Initializing at product (new prefix):', productId);
+      navigate(`/product/${productId}`, { replace: true });
+    } else if (startParam && startParam.startsWith('p_')) {
+      const productId = startParam.substring(2);
+      console.log('[Routing] Initializing at product (old prefix):', productId);
+      navigate(`/product/${productId}`, { replace: true });
+    } else {
+      console.log('[Routing] Initializing at home fallback');
+      navigate('/', { replace: true });
     }
   }, []); // Run exactly once on mount
 
