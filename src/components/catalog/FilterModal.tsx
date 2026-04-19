@@ -41,7 +41,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose }) => 
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-x-0 bottom-0 z-[70] bg-app-bg border-t-2 border-app-border-strong rounded-t-[32px] max-h-[90vh] overflow-y-auto safe-area-bottom"
+            className="fixed inset-x-0 bottom-0 z-[70] bg-app-bg border-t-2 border-app-border-strong rounded-t-[32px] max-h-[calc(var(--tg-height,100vh)*0.9)] overflow-y-auto safe-area-bottom"
           >
             <div className="sticky top-0 z-10 bg-app-bg/95 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-app-border-strong">
               <h3 className="text-lg font-serif text-app-accent">Фильтр</h3>

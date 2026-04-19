@@ -98,7 +98,7 @@ function App() {
   const isImmersiveProductPage = location.pathname.startsWith('/product/');
 
   return (
-    <div className="min-h-screen min-h-[100dvh] w-full text-app-text transition-colors duration-500 overflow-x-hidden">
+    <div className="min-h-[var(--tg-height,100vh)] w-full text-app-text transition-colors duration-500 overflow-x-hidden">
       <ThemeManager />
       <AdminToolbar />
       <AnimatePresence>

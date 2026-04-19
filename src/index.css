@@ -10,26 +10,23 @@
   html {
     margin: 0 !important;
     padding: 0 !important;
-    /* Ensure background matches app theme so no slit colour flash */
     background: #000;
-    height: 100%;
+    height: var(--tg-height, 100%);
     overflow: hidden;
   }
 
   body {
     margin: 0 !important;
     padding: 0 !important;
-    padding-top: 0 !important;   /* override any safe-area-inset-top */
+    padding-top: 0 !important;
     background-color: var(--app-bg);
     color: var(--app-text);
     -webkit-tap-highlight-color: transparent;
-    height: 100%;
-    /* prevent iOS rubber-band scroll exposing the background */
+    height: var(--tg-height, 100%);
     overscroll-behavior-y: none;
   }
 
-  /* #root is fixed so it ALWAYS covers the full viewport,
-     even when Telegram injects an iframe with offset */
+  /* #root is fixed so it ALWAYS covers the full viewport */
   #root {
     position: fixed;
     top: 0;
@@ -39,8 +36,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior-y: none;
-    /* Allow dynamic viewport height on mobile browsers */
-    height: 100dvh;
+    height: var(--tg-height, 100%);
   }
 
   .no-scrollbar::-webkit-scrollbar {
@@ -202,9 +198,9 @@
   background-color: var(--tg-theme-bg-color, var(--app-surface-1));
 }
 
-/* Telegram Safe Area Handling */
+/* Telegram Safe Area Handling - Disabled to prevent slits */
 .safe-area-top {
-  padding-top: var(--tg-safe-area-inset-top, 0px);
+  padding-top: 0px;
 }
 
 .safe-area-bottom {

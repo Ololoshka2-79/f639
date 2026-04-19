@@ -140,7 +140,7 @@ const FullscreenZoomImage: React.FC<{ src: string; onSwipeDown: () => void }> = 
         src={src}
         alt=""
         draggable={false}
-        className="max-h-[90vh] max-w-full w-auto object-contain"
+        className="max-h-[calc(0.9*var(--tg-height,100vh))] max-w-full w-auto object-contain"
         style={{
           transform: `scale(${scale}) translate(${translate.x / scale}px, ${translate.y / scale}px)`,
           transition: scale === 1 ? 'transform 0.3s cubic-bezier(0.22,1,0.36,1)' : 'none',
