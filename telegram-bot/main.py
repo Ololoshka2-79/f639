@@ -80,6 +80,19 @@ async def main() -> None:
     dp = Dispatcher()
     dp.include_router(router)
 
+    # Установка Menu Button (кнопка слева от ввода сообщения) в режим Web App
+    try:
+        from aiogram.types import MenuButtonWebApp, WebAppInfo as BotWebAppInfo
+        await bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(
+                text="Магазин",
+                web_app=BotWebAppInfo(url=web_url)
+            )
+        )
+        log.info("Menu button set to WebApp: %s", web_url)
+    except Exception as e:
+        log.error("Failed to set menu button: %s", e)
+
     log.info("Polling started; WEB_APP_URL=%s", web_url)
     await dp.start_polling(bot)
 

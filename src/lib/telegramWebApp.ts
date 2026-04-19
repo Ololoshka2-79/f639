@@ -14,6 +14,12 @@ export function bootstrapTelegramViewport(): void {
     document.documentElement.style.setProperty('--tg-height', `${h}px`);
     document.documentElement.style.setProperty('--tg-safe-top', `${safeTop}px`);
     
+    console.log('Telegram WebApp init:', {
+      isWebApp: !!tg.initData,
+      platform: tg.platform,
+      version: tg.version,
+    });
+
     console.log('[Telegram Diagnostics]', {
       innerHeight: h,
       tgViewport: tg.viewportHeight,
