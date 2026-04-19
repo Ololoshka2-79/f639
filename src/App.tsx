@@ -42,7 +42,6 @@ function App() {
     let cleanupSwipe: (() => void) | undefined;
 
     if (tg) {
-      bootstrapTelegramViewport();
       tg.enableClosingConfirmation?.();
     }
 

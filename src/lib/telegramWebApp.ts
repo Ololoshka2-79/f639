@@ -7,18 +7,16 @@ export function bootstrapTelegramViewport(): void {
   if (!tg) return;
 
   function setAppHeight() {
-    const height = tg.viewportHeight;
+    const height = tg.viewportHeight || window.innerHeight;
     const safeTop = tg.contentSafeAreaInset?.top || tg.safeAreaInset?.top || 0;
     
     document.documentElement.style.setProperty('--tg-height', `${height}px`);
     document.documentElement.style.setProperty('--tg-safe-top', `${safeTop}px`);
-    document.body.style.height = `${height}px`;
     
     console.log('[Telegram Diagnostics]', {
       innerHeight: window.innerHeight,
       tgViewport: tg.viewportHeight,
       tgSafeTop: safeTop,
-      tgStableHeight: tg.viewportStableHeight
     });
   }
 
@@ -38,22 +36,7 @@ export function bootstrapTelegramViewport(): void {
     setAppHeight();
 
     // Listen for changes (keyboard open, etc)
-    tg.onEvent?.('viewportChanged', () => {
-      setAppHeight();
-      // Force scroll to top to prevent "floating" layout
-      window.scrollTo(0, 0);
-    });
-
-    // Force recalculation after ready
-    setTimeout(() => {
-      tg.expand?.();
-      setAppHeight();
-      window.scrollTo(0, 0);
-      window.dispatchEvent(new Event('resize'));
-    }, 300);
-
-    // One more check for slow devices
-    setTimeout(setAppHeight, 1000);
+    tg.onEvent?.('viewportChanged', setAppHeight);
 
   } catch (e) {
     console.error('[Telegram] Init failed', e);

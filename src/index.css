@@ -26,17 +26,12 @@
     overscroll-behavior-y: none;
   }
 
-  /* #root is fixed so it ALWAYS covers the full viewport */
+  /* #root is now height-based to avoid conflict with Telegram fixed layout */
   #root {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    height: var(--tg-height, 100vh);
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior-y: none;
-    height: var(--tg-height, 100%);
   }
 
   .no-scrollbar::-webkit-scrollbar {
