@@ -14,12 +14,10 @@ import { useHaptics } from '../hooks/useHaptics';
 export const HomeScreen: React.FC = () => {
   const { products } = useMergedCatalogProducts();
   const navigate = useNavigate();
-  const { homeHeroTitle, homeHeroSubtitle, homeHeroImage, setHomeHeroData, homeSectionTitle, homeSectionSubtitle } = useUIStore();
+  const { setHomeHeroData, homeSectionTitle, homeSectionSubtitle } = useUIStore();
   const { editMode } = useAdminStore();
   const { events } = useAnalyticsStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isDraggingHeroImage, setIsDraggingHeroImage] = useState(false);
-  const heroImageInputRef = useRef<HTMLInputElement>(null);
   const haptics = useHaptics();
 
   const containerVariants = {
@@ -32,19 +30,6 @@ export const HomeScreen: React.FC = () => {
 
   const handleUpdateHero = (field: 'title' | 'subtitle' | 'sectionTitle' | 'sectionSubtitle', value: string) => {
     setHomeHeroData({ [field]: value });
-  };
-
-  const handleHeroFiles = async (files: FileList | null) => {
-    const file = files?.[0];
-    if (!file) return;
-    try {
-      const result = await api.admin.uploadImage(file);
-      setHomeHeroData({ image: result.url });
-      haptics.success();
-    } catch (err) {
-      console.error('[HomeScreen] Hero upload failed:', err);
-      haptics.error();
-    }
   };
 
   // Calculate popularity
