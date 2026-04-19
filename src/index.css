@@ -24,6 +24,17 @@
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
     overflow: hidden;
+    position: relative;
+  }
+
+  /* HARD BACKGROUND FIX (iOS artifact fix) */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: var(--app-bg);
+    z-index: -1;
+    pointer-events: none;
   }
 
   #root {
@@ -34,6 +45,7 @@
     overflow-x: hidden;
     overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;
+    z-index: 1;
   }
 
   .no-scrollbar::-webkit-scrollbar {

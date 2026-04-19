@@ -36,8 +36,28 @@ export function bootstrapTelegramViewport(): void {
     // Initial set
     setHeight();
 
+    // iOS Guard: Initial visual viewport stabilization
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isIOS) {
+      requestAnimationFrame(() => {
+        setTimeout(setHeight, 50);
+      });
+    }
+
     // Listen for changes (keyboard open, orientation, expand stabilization)
-    tg.onEvent?.('viewportChanged', setHeight);
+    tg.onEvent?.('viewportChanged', () => {
+      setHeight();
+      
+      // Force hardware repaint on iOS to fix initial paint offset bugs
+      if (isIOS) {
+        requestAnimationFrame(() => {
+          document.body.style.transform = 'translateZ(0)';
+          // @ts-ignore
+          document.body.offsetHeight;
+        });
+      }
+    });
+
     window.addEventListener('resize', setHeight);
 
   } catch (e) {
