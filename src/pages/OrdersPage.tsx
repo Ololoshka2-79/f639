@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Package, Clock, CheckCircle2, ChevronRight, ShoppingBag } from 'lucide-react';
+import { Package, Clock, CheckCircle2, ChevronRight, ShoppingBag } from 'lucide-react';
 import { api } from '../lib/api/endpoints';
 import { useHaptics } from '../hooks/useHaptics';
 
@@ -61,6 +61,19 @@ export const OrdersPage: React.FC = () => {
     void fetchOrders();
   }, []);
 
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (tg?.BackButton) {
+      tg.BackButton.show();
+      const handleBack = () => navigate(-1);
+      tg.BackButton.onClick(handleBack);
+      return () => {
+        tg.BackButton.offClick(handleBack);
+        tg.BackButton.hide();
+      };
+    }
+  }, [navigate]);
+
   const formatPrice = (price: number) => {
     return price.toLocaleString('ru-RU') + ' ₽';
   };
@@ -82,15 +95,9 @@ export const OrdersPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-app-bg pb-24 text-app-text">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-app-border/40 bg-app-bg/80 px-6 py-4 backdrop-blur-xl">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 active:scale-95"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <h1 className="text-lg font-semibold tracking-tight">История заказов</h1>
+      <header className="sticky top-0 z-40 border-b border-app-border/40 bg-app-bg/80 px-6 py-6 backdrop-blur-xl">
+        <div className="flex items-center justify-center">
+          <h1 className="text-lg font-semibold tracking-tight uppercase">История заказов</h1>
         </div>
       </header>
 

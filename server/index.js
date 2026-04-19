@@ -213,6 +213,7 @@ const handlePostOrder = async (req, res) => {
   const newOrder = {
     id: orderId,
     user_id: userId,
+    username: auth.user?.username,
     status: 'new',
     items,
     total,
@@ -229,10 +230,14 @@ const handlePostOrder = async (req, res) => {
         .map((item, idx) => `${idx + 1}. ${item.title || item.productId} (x${item.quantity}) - ${item.price}₽`)
         .join('\n');
 
+      const userNickname = auth.user?.username ? `@${auth.user.username}` : 'скрыт/нет';
+
       const message =
-        `<b>🛍 Новый заказ #${orderId}</b>\n\n` +
+        `<b>🛍 Новый заказ #${orderId}</b>\n` +
+        `<b>━━━━━━━━━━━━━━━━</b>\n\n` +
         `<b>👤 Клиент:</b> ${contactInfo?.name || '—'}\n` +
         `<b>📞 Телефон:</b> ${contactInfo?.phone || '—'}\n` +
+        `<b>💬 TG:</b> ${userNickname}\n` +
         `<b>📍 Адрес:</b> ${deliveryData?.address || '—'}\n\n` +
         `<b>📦 Товары:</b>\n${itemsText}\n\n` +
         `<b>💰 Итого:</b> ${total}₽\n\n` +

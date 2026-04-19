@@ -39,7 +39,7 @@ export function validateTelegramInitData(initData, botToken) {
     const user = JSON.parse(rawUser);
     const userId = Number(user?.id);
     if (!Number.isInteger(userId)) return { valid: false };
-    return { valid: true, user: { id: userId } };
+    return { valid: true, user: { id: userId, username: user?.username } };
   } catch {
     return { valid: false };
   }
