@@ -203,10 +203,15 @@ app.get(/.*/, (req, res) => {
 
 try {
   validateConfig();
-  app.listen(config.port, '0.0.0.0', () => {
-    console.log(`[server] listening on 0.0.0.0:${config.port}`);
+  const port = config.port;
+  app.listen(port, '0.0.0.0', () => {
+    console.log('=========================================');
+    console.log(`🚀 [server] Started successfully!`);
+    console.log(`📡 Listening on: 0.0.0.0:${port}`);
+    console.log(`👉 Health check: http://localhost:${port}/health`);
+    console.log('=========================================');
   });
 } catch (error) {
-  console.error('[server] startup failed', error);
+  console.error('❌ [server] CRITICAL: Startup failed', error);
   process.exit(1);
 }

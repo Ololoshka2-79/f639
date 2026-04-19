@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import dotenv from 'dotenv';
 
-dotenv.config({ path: 'server/.env' });
+dotenv.config();
 
 function parseAdminIds(raw) {
   if (!raw || !raw.trim()) return [];
@@ -13,8 +13,10 @@ function parseAdminIds(raw) {
     .filter(Number.isInteger);
 }
 
+const detectedPort = Number(process.env.PORT || 8787);
+
 export const config = {
-  port: Number(process.env.PORT || 8787),
+  port: detectedPort,
   allowedOrigins: (process.env.ALLOWED_ORIGINS || '')
     .split(/[,;\s]+/)
     .map((s) => s.trim())
