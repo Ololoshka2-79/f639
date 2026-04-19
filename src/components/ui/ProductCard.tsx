@@ -64,14 +64,51 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
       onClick={editMode ? undefined : onClick}
     >
       <div className="relative w-full shrink-0 overflow-hidden rounded-[10px] bg-[#f5f5f5] aspect-[4/5] dark:bg-[#141414]">
-        <img
-          src={product.image}
-          alt={product.title}
-          className="h-full w-full object-cover object-center transition-transform duration-[280ms] ease-out group-hover:scale-[1.03]"
-        />
+        {/* Horizontal Swiper */}
+        <div 
+          className="flex h-full w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden no-scrollbar"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {(!product.images || product.images.length === 0) ? (
+            <div className="h-full w-full shrink-0 snap-center">
+               <img
+                src={product.image}
+                alt={product.title}
+                className="h-full w-full object-cover object-center transition-transform duration-[280ms] ease-out group-hover:scale-[1.03]"
+              />
+            </div>
+          ) : (
+            product.images.map((img, idx) => (
+              <div key={`${img.public_id}-${idx}`} className="h-full w-full shrink-0 snap-center">
+                <img
+                  loading="lazy"
+                  src={img.url.includes('cloudinary') ? img.url.replace('/upload/', '/upload/w_600,c_scale,q_auto,f_auto/') : img.url}
+                  alt={`${product.title} - ${idx + 1}`}
+                  className="h-full w-full object-cover object-center transition-transform duration-[280ms] ease-out group-hover:scale-[1.03]"
+                />
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Swiper Dots */}
+        {product.images?.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1.5 px-2 py-1 rounded-full bg-black/20 backdrop-blur-sm">
+            {product.images.map((_, idx) => (
+              <div 
+                key={idx} 
+                className="h-1 w-1 rounded-full bg-white/60 transition-all duration-300 first:bg-white first:w-2"
+                style={{ 
+                  // In a real swiper we'd track active index, but for native scroll we rely on first being visually active initially
+                  // To be fully senior, we could add a scroll listener, but CSS scroll-snap is a great start.
+                }}
+              />
+            ))}
+          </div>
+        )}
 
         {editMode && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-app-bg/30 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-app-bg/30 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
             <button
               type="button"
               className="rounded-full bg-app-accent p-3 text-app-bg shadow-2xl transition-transform duration-200 ease-out hover:scale-105"

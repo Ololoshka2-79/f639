@@ -24,8 +24,13 @@ export interface Product {
   image_public_id?: string;
   gallery: string[];
   gallery_public_ids?: string[];
+  images: {
+    url: string;
+    public_id: string;
+  }[];
   isNew: boolean;
   isBestSeller: boolean;
+  isOnSale_deprecated?: boolean; // We might want to unify this but let's keep it for now
   isHidden: boolean;
   createdAt: string;
   updatedAt: string;

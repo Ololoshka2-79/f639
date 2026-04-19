@@ -208,7 +208,13 @@ export const ProductPage: React.FC = () => {
       </div>
 
       {/* Media Gallery */}
-      <ProductGallery images={[product.image, ...(product.gallery ?? [])]} />
+      <ProductGallery 
+        images={
+          product.images && product.images.length > 0 
+            ? product.images.map(img => img.url) 
+            : [product.image, ...(product.gallery ?? [])]
+        } 
+      />
 
       {/* Product Content */}
       <div className="relative z-20 mt-[-32px] rounded-t-[32px] bg-app-surface-1 px-6 py-10 pb-14 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_30px_rgba(0,0,0,0.4)]">

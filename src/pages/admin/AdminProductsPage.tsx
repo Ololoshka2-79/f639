@@ -73,9 +73,15 @@ export const AdminProductsPage: React.FC = () => {
             } else {
                 const id = Math.random().toString(36).slice(2, 11);
                 const now = new Date().toISOString();
-                const payload: Product = { ...productData, id, createdAt: now, updatedAt: now };
+                const payload: Product = { 
+                    ...productData, 
+                    id, 
+                    createdAt: now, 
+                    updatedAt: now,
+                    images: productData.images || [] 
+                } as Product;
                 await api.products.upsert(payload);
-                actions.addProduct(productData);
+                actions.addProduct(payload);
             }
         } catch (e) {
             console.error(e);

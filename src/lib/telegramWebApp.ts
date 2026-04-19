@@ -8,8 +8,15 @@ export function bootstrapTelegramViewport(): void {
 
   try {
     tg.ready?.();
-  } catch {
-    /* noop */
+    tg.expand?.();
+    if (tg.disableVerticalSwipes) {
+      tg.disableVerticalSwipes();
+    }
+    // Also set some colors for seamless look
+    tg.headerColor = tg.colorScheme === 'dark' ? '#000000' : '#FFFFFF';
+    tg.backgroundColor = tg.colorScheme === 'dark' ? '#000000' : '#FFFFFF';
+  } catch (e) {
+    console.error('[Telegram] Init failed', e);
   }
 
   const expand = () => {
@@ -20,10 +27,8 @@ export function bootstrapTelegramViewport(): void {
     }
   };
 
-  expand();
+  // Re-expand on some frames to ensure it sticks on all devices
   requestAnimationFrame(expand);
-  queueMicrotask(expand);
-  window.setTimeout(expand, 0);
-  window.setTimeout(expand, 120);
-  window.setTimeout(expand, 400);
+  window.setTimeout(expand, 100);
+  window.setTimeout(expand, 500);
 }

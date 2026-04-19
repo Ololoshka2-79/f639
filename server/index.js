@@ -79,6 +79,7 @@ app.post('/products', requireAdmin, async (req, res) => {
   if (!product?.id) {
     return res.status(400).json({ message: 'Product id is required' });
   }
+  console.log(`[POST /products] Creating/Updating product: ${product.id} - ${product.title}`);
   const saved = await upsertProduct(product);
   return res.json(saved);
 });
@@ -87,6 +88,7 @@ app.post('/v1/products', requireAdmin, async (req, res) => {
   if (!product?.id) {
     return res.status(400).json({ message: 'Product id is required' });
   }
+  console.log(`[POST /v1/products] Creating/Updating product: ${product.id} - ${product.title}`);
   const saved = await upsertProduct(product);
   return res.json(saved);
 });
@@ -126,9 +128,11 @@ app.post('/v1/upload', requireAdmin, upload.single('file'), async (req, res) => 
 
 app.delete('/product/:id', requireAdmin, async (req, res) => {
   const productId = req.params.id;
+  console.log(`[DELETE /product/${productId}] Attempting to delete product`);
   const product = await getProductById(productId);
 
   if (!product) {
+    console.warn(`[DELETE /product/${productId}] Product not found`);
     return res.status(404).json({ message: 'Product not found' });
   }
 
@@ -150,6 +154,7 @@ app.delete('/product/:id', requireAdmin, async (req, res) => {
   }
 
   await removeProductById(productId);
+  console.log(`[DELETE /product/${productId}] Successfully deleted`);
   return res.status(204).send();
 });
 app.delete('/v1/product/:id', requireAdmin, async (req, res) => {

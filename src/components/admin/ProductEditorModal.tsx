@@ -33,10 +33,9 @@ export const ProductEditorModal: FC<ProductEditorModalProps> = ({
     oldPrice: undefined,
     categoryId: categories[0]?.id || '',
     inStock: true,
-    image: '',
-    image_public_id: undefined,
-    gallery: [],
-    gallery_public_ids: [],
+    image: '', // Keep for compatibility
+    gallery: [], // Keep for compatibility
+    images: [],
     isNew: true,
     isBestSeller: false,
     isOnSale: false,
@@ -50,10 +49,17 @@ export const ProductEditorModal: FC<ProductEditorModalProps> = ({
     setSaveError(null);
     if (initialProduct) {
       const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = initialProduct;
-      void _id;
-      void _c;
-      void _u;
-      setFormData(rest);
+      // Ensure images array exists
+      if (!rest.images || rest.images.length === 0) {
+        rest.images = [];
+        if (rest.image) rest.images.push({ url: rest.image, public_id: rest.image_public_id || '' });
+        if (rest.gallery) {
+           rest.gallery.forEach((url, i) => {
+             rest.images.push({ url, public_id: rest.gallery_public_ids?.[i] || '' });
+           });
+        }
+      }
+      setFormData(rest as any);
       setPriceInput(rest.price > 0 ? String(rest.price) : '');
     } else {
       setPriceInput('');
@@ -66,9 +72,8 @@ export const ProductEditorModal: FC<ProductEditorModalProps> = ({
         categoryId: categories[0]?.id || '',
         inStock: true,
         image: '',
-        image_public_id: undefined,
         gallery: [],
-        gallery_public_ids: [],
+        images: [],
         isNew: true,
         isBestSeller: false,
         isOnSale: false,
@@ -91,30 +96,17 @@ export const ProductEditorModal: FC<ProductEditorModalProps> = ({
     });
   };
 
-  const allPhotos = formData.image ? [formData.image, ...formData.gallery] : [...formData.gallery];
-
   const removePhotoAt = (index: number) => {
     setFormData((prev) => {
-      const nextGallery = [...prev.gallery];
-      const nextGalleryPublicIds = [...(prev.gallery_public_ids || [])];
-      let nextImage = prev.image;
-      let nextImagePublicId = prev.image_public_id;
-
-      if (index === 0) {
-        nextImage = nextGallery.shift() || '';
-        nextImagePublicId = nextGalleryPublicIds.shift();
-      } else {
-        const galleryIndex = index - 1;
-        nextGallery.splice(galleryIndex, 1);
-        nextGalleryPublicIds.splice(galleryIndex, 1);
-      }
-
+      const nextImages = [...prev.images];
+      nextImages.splice(index, 1);
+      
       return {
         ...prev,
-        image: nextImage,
-        image_public_id: nextImagePublicId,
-        gallery: nextGallery,
-        gallery_public_ids: nextGalleryPublicIds,
+        images: nextImages,
+        // Sync legacy fields
+        image: nextImages[0]?.url || '',
+        gallery: nextImages.slice(1).map(i => i.url)
       };
     });
   };
@@ -126,26 +118,23 @@ export const ProductEditorModal: FC<ProductEditorModalProps> = ({
     setSaveError(null);
     setIsUploadingImages(true);
     try {
+      console.log(`[Admin] Uploading ${files.length} images...`);
       const uploaded = await Promise.all(
         Array.from(files).map((file) => api.admin.uploadImage(file))
       );
       setFormData((prev) => {
-        let image = prev.image;
-        let imagePublicId = prev.image_public_id;
-        let gallery = [...prev.gallery];
-        let galleryPublicIds = [...(prev.gallery_public_ids || [])];
-        for (const item of uploaded) {
-          if (!image) {
-            image = item.url;
-            imagePublicId = item.public_id;
-          } else {
-            gallery.push(item.url);
-            galleryPublicIds.push(item.public_id);
-          }
-        }
-        return { ...prev, image, image_public_id: imagePublicId, gallery, gallery_public_ids: galleryPublicIds };
+        const nextImages = [...prev.images, ...uploaded.map(item => ({ url: item.url, public_id: item.public_id }))];
+        return { 
+          ...prev, 
+          images: nextImages,
+          // Sync legacy fields
+          image: nextImages[0]?.url || '',
+          gallery: nextImages.slice(1).map(i => i.url)
+        };
       });
+      console.log(`[Admin] Successfully uploaded ${uploaded.length} images.`);
     } catch (error) {
+      console.error('[Admin] Upload failed', error);
       const message = error instanceof Error ? error.message : 'Upload failed';
       setSaveError(`Не удалось загрузить фото: ${message}`);
       haptics.error();
@@ -332,12 +321,12 @@ export const ProductEditorModal: FC<ProductEditorModalProps> = ({
                     Первое фото — обложка в каталоге. Можно выбрать несколько сразу.
                   </p>
                   <div className="grid grid-cols-3 gap-3">
-                    {allPhotos.map((img, idx) => (
+                    {formData.images.map((img, idx) => (
                       <div
-                        key={`${idx}-${img.slice(0, 32)}`}
+                        key={`${idx}-${img.url.slice(-20)}`}
                         className="group relative aspect-square overflow-hidden rounded-xl border border-app-border border-strong"
                       >
-                        <img src={img} alt="" className="h-full w-full object-cover" />
+                        <img src={img.url} alt="" className="h-full w-full object-cover" />
                         {idx === 0 ? (
                           <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-white">
                             Обложка

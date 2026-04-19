@@ -44,16 +44,6 @@ function App() {
     if (tg) {
       bootstrapTelegramViewport();
       tg.enableClosingConfirmation?.();
-      const disableSwipe = () => {
-        if (tg.disableVerticalSwipes) {
-          tg.disableVerticalSwipes();
-        }
-      };
-      disableSwipe();
-      window.addEventListener('focus', disableSwipe);
-      cleanupSwipe = () => window.removeEventListener('focus', disableSwipe);
-      tg.headerColor = '#0A0A0A';
-      tg.backgroundColor = '#0A0A0A';
     }
 
     const tgUser = tg?.initDataUnsafe?.user;

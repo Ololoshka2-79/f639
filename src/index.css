@@ -3,13 +3,24 @@
 @tailwind utilities;
 
 @layer base {
-  html {
+  html, body {
     height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
   }
 
   #root {
     min-height: 100%;
     min-height: 100dvh;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
   }
 
   :root {
@@ -39,13 +50,9 @@
   }
 
   body {
-    min-height: 100%;
-    min-height: 100dvh;
     background-color: var(--app-bg);
     color: var(--app-text);
     -webkit-tap-highlight-color: transparent;
-    overflow-x: hidden;
-    margin: 0;
   }
 
   h1, h2, h3, h4, h5, h6 {

@@ -31,14 +31,30 @@ export const useProductStore = create<ProductStore>()(
         )
       })),
       addProduct: (productData) => {
-        const id = Math.random().toString(36).substr(2, 9);
-        const newProduct: Product = {
-          ...productData,
-          id,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        set((state) => ({ products: [newProduct, ...state.products] }));
+        set((state) => {
+          const id = (productData as any).id || Math.random().toString(36).substr(2, 9);
+          
+          if (state.products.find(p => p.id === id)) {
+            console.log(`[ProductStore] Product with id ${id} already exists. Skipping.`);
+            return state;
+          }
+
+          const newProduct: Product = {
+            image: '',
+            gallery: [],
+            gallery_public_ids: [],
+            images: [],
+            isNew: true,
+            isBestSeller: false,
+            isHidden: false,
+            ...productData,
+            id,
+            createdAt: (productData as any).createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          } as Product;
+
+          return { products: [newProduct, ...state.products] };
+        });
       },
       duplicateProduct: (id) => set((state) => {
         const original = state.products.find(p => p.id === id);
@@ -82,17 +98,37 @@ export const useProductStore = create<ProductStore>()(
     }),
     {
       name: 'f639-products-v5',
-      // Migrate old data: ensure gallery is always an array
+      // Migrate old data: ensure images array exists and gallery is always an array
       merge: (persisted: unknown, current) => {
         const p = persisted as Partial<typeof current>;
+        const products = (p.products ?? current.products).map((prod) => {
+          const gallery = Array.isArray(prod.gallery) ? prod.gallery : [];
+          const gallery_public_ids = Array.isArray(prod.gallery_public_ids) ? prod.gallery_public_ids : [];
+          
+          // Migration: if images array is missing, build it from image and gallery
+          let images = prod.images;
+          if (!Array.isArray(images) || images.length === 0) {
+            images = [];
+            if (prod.image) {
+              images.push({ url: prod.image, public_id: (prod as any).image_public_id || '' });
+            }
+            gallery.forEach((url, i) => {
+              images.push({ url, public_id: gallery_public_ids[i] || '' });
+            });
+          }
+
+          return {
+            ...prod,
+            gallery,
+            gallery_public_ids,
+            images,
+          };
+        });
+
         return {
           ...current,
           ...p,
-          products: (p.products ?? current.products).map((prod) => ({
-            ...prod,
-            gallery: Array.isArray(prod.gallery) ? prod.gallery : [],
-            gallery_public_ids: Array.isArray(prod.gallery_public_ids) ? prod.gallery_public_ids : [],
-          })),
+          products,
         };
       },
     }
