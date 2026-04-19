@@ -53,14 +53,15 @@ def _web_app_url() -> str:
 
 
 @router.message(CommandStart())
-async def cmd_start(message: Message) -> None:
-    url = _web_app_url()
+async def cmd_start(message: Message, bot: Bot) -> None:
+    me = await bot.get_me()
+    username = me.username
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
                     text="Открыть магазин",
-                    web_app=WebAppInfo(url=url),
+                    url=f"https://t.me/{username}?startapp=store",
                 )
             ]
         ]

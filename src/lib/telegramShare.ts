@@ -1,17 +1,22 @@
 /**
- * Шаринг ссылки в Telegram из Mini App.
- * Порядок: shareUrl (синхронно из жеста) → openTelegramLink(t.me/share) → window.open.
+ * Шаринг ссылки в Telegram из Mini App через startapp deep link.
  */
-export function shareInTelegram(url: string, text: string): void {
+export function shareInTelegram(payload: string, text: string): void {
   const tg = window.Telegram?.WebApp;
-  const encodedUrl = encodeURIComponent(url);
+  const botUsername = import.meta.env.VITE_BOT_USERNAME || 'f_639_bot';
+  
+  // Создаем deep link: https://t.me/bot?startapp=payload
+  const deepLink = `https://t.me/${botUsername}?startapp=${payload}`;
+  
+  const encodedUrl = encodeURIComponent(deepLink);
   const encodedText = encodeURIComponent(text);
   const telegramShareHref = `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`;
 
   if (tg) {
     try {
+      // Пытаемся использовать нативный метод shareUrl если доступен
       if (typeof tg.shareUrl === 'function') {
-        tg.shareUrl(url, text);
+        tg.shareUrl(deepLink, text);
         return;
       }
     } catch (e) {

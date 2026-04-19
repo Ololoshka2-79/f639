@@ -72,6 +72,19 @@ function App() {
       setAdminStatus(false);
     }
 
+    // Handle deep link (startapp) parameters
+    const startParam = tg?.initDataUnsafe?.start_param;
+    if (startParam) {
+      console.log('[DeepLink] Handling start_param:', startParam);
+      if (startParam === 'store' || startParam === 'catalog') {
+        navigate('/catalog');
+      } else if (startParam.startsWith('p_')) {
+        const productId = startParam.substring(2);
+        // Navigate to product page. The ProductPage handles ID-only slugs too.
+        navigate(`/product/${productId}`);
+      }
+    }
+
     setLoading(false);
     analytics.trackAppOpen();
 

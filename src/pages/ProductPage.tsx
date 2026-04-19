@@ -48,19 +48,22 @@ export const ProductPage: React.FC = () => {
 
   const product = storeProduct ?? remoteProduct;
 
-  // Metadata for sharing
-  const shareUrl = window.location.href;
+  // Metadata for sharing using deep links
+  const sharePayload = product ? `p_${product.id}` : 'store';
   const shareText = `Посмотри на это украшение: ${product?.title}`;
+
+  const botUsername = import.meta.env.VITE_BOT_USERNAME || 'f_639_bot';
+  const fallbackDeepLink = `https://t.me/${botUsername}?startapp=${sharePayload}`;
 
   const handleShareTelegram = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     try {
-      shareInTelegram(shareUrl, shareText);
+      shareInTelegram(sharePayload, shareText);
     } catch (err) {
       console.warn('[share]', err);
       window.open(
-        `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`,
+        `https://t.me/share/url?url=${encodeURIComponent(fallbackDeepLink)}&text=${encodeURIComponent(shareText)}`,
         '_blank',
         'noopener,noreferrer'
       );
@@ -70,7 +73,7 @@ export const ProductPage: React.FC = () => {
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(shareUrl);
+    navigator.clipboard.writeText(fallbackDeepLink);
     haptics.impactMedium();
     setIsShareSheetOpen(false);
   };
