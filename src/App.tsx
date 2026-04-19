@@ -24,7 +24,19 @@ const AdminProductsPage = lazy(() =>
 );
 
 function App() {
+  const tg = window.Telegram?.WebApp;
   const [loading, setLoading] = useState(true);
+  
+  // Guard against browser mode (missing initData)
+  if (!tg?.initData) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-app-bg p-8 text-center">
+        <h2 className="mb-4 font-serif text-2xl text-app-text">Пожалуйста, откройте приложение через Telegram</h2>
+        <p className="text-sm text-app-text-muted">Это необходимо для корректной работы магазина и вашей безопасности.</p>
+      </div>
+    );
+  }
+
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
@@ -40,6 +52,14 @@ function App() {
     let cleanupSwipe: (() => void) | undefined;
 
     if (tg) {
+      console.log('LAUNCH MODE DEBUG', {
+        href: window.location.href,
+        initData: tg.initData,
+        initDataUnsafe: tg.initDataUnsafe,
+        platform: tg.platform,
+        version: tg.version,
+        isExpanded: tg.isExpanded,
+      });
       tg.enableClosingConfirmation?.();
     }
 
