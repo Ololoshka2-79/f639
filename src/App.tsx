@@ -41,6 +41,19 @@ function App() {
   const location = useLocation();
   const navigationType = useNavigationType();
 
+  // ❗ CRITICAL: Force expand at the very first React lifecycle moment.
+  // This fires BEFORE any other effects and is essential for inline-button WebView context.
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (!tg) return;
+    tg.ready();
+    tg.expand();
+    // Wave 2: next tick (catches cases where viewport isn't ready yet)
+    setTimeout(() => tg.expand(), 0);
+    // Wave 3: after first layout (catches slow iOS WebView)
+    setTimeout(() => tg.expand(), 150);
+  }, []);
+
   useEffect(() => {
     syncRouteStack(location.pathname, navigationType);
   }, [location.pathname, navigationType]);
@@ -50,6 +63,20 @@ function App() {
   useEffect(() => {
     let cleanupSwipe: (() => void) | undefined;
     const anyTg = tg as any;
+
+    console.log('WEBAPP CHECK', {
+      hasWebApp: !!window.Telegram?.WebApp,
+      initData: window.Telegram?.WebApp?.initData,
+      platform: (window.Telegram?.WebApp as any)?.platform,
+    });
+
+    console.log('TELEGRAM OPEN CONTEXT', {
+      url: window.location.href,
+      ref: document.referrer,
+      tg: tg,
+      initData: tg?.initData,
+      start_param: (tg?.initDataUnsafe as any)?.start_param,
+    });
 
     console.log('LAUNCH MODE DEBUG', {
       href: window.location.href,
@@ -62,15 +89,14 @@ function App() {
     
     tg?.enableClosingConfirmation?.();
     
-    // Force fullscreen expansion
+    // Force fullscreen expansion (additional waves after mount cascade)
     tg?.expand?.();
     
-    // Secondary attempt with delay for slower devices/clients
+    // Recovery attempt after React paint settles
     const expandTimer = setTimeout(() => {
       tg?.expand?.();
-      tg?.ready?.();
-      console.log('[WebApp] Secondary expand called');
-    }, 500);
+      console.log('[WebApp] Recovery expand called');
+    }, 150);
 
     tg?.ready?.();
 

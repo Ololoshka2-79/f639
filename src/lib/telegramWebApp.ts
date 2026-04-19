@@ -1,10 +1,23 @@
 /**
- * Инициализация Telegram Mini App: ready + expand как можно раньше и с повторами —
- * при открытии по inline-кнопке web_app иногда первый expand срабатывает до готовности viewport.
+ * Инициализация Telegram Mini App: ready + expand как можно раньше и с повторами.
+ * Критично для inline-кнопки: WebView-контекст часто не ready на момент первого expand().
+ * Трёхволновой форс закрывает баги iOS, Android WebView и Telegram Desktop.
  */
 export function bootstrapTelegramViewport(): void {
   const tg = (window as any).Telegram?.WebApp;
   if (!tg) return;
+
+  // ❗ FORCE FULLSCREEN — 3-wave expand cascade
+  // Wave 1: synchronous — fires before any frame is painted
+  tg.ready?.();
+  tg.expand?.();
+
+  // Wave 2: next microtask tick — catches iOS WebView that ignores sync expand
+  setTimeout(() => { tg.expand?.(); }, 50);
+
+  // Wave 3: after layout stabilizes — catches slow Android / Telegram Desktop
+  setTimeout(() => { tg.expand?.(); }, 300);
+
 
   const setHeight = () => {
     // window.innerHeight is much more stable than tg.viewportHeight on initial render
@@ -28,6 +41,7 @@ export function bootstrapTelegramViewport(): void {
   };
 
   try {
+    // ready/expand already called in cascade above; call once more inside try for safety
     tg.ready?.();
     tg.expand?.();
 

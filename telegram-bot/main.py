@@ -26,7 +26,7 @@ except ImportError:
 from aiogram import Bot, Dispatcher, Router
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo, CallbackQuery
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("f639-bot")
@@ -54,28 +54,42 @@ def _web_app_url() -> str:
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, bot: Bot) -> None:
+    # 🎯 ПРИНУДИТЕЛЬНЫЙ ВЫЗОВ: только через /start или startapp
+    log.info("IS_START_CONTEXT: %s", message.text.startswith("/start") if message.text else False)
+    log.info("IS_WEBAPP_CONTEXT: %s", bool(getattr(message, "web_app_data", None)))
+    
     web_url = _web_app_url()
     button = InlineKeyboardButton(
         text="Открыть",
-        web_app=WebAppInfo(url="https://f639.up.railway.app")
+        web_app=WebAppInfo(url=web_url)
     )
-    
-    # 3. Проверить тип кнопки (обязательно)
-    log.info("Button object: %s", button)
-    log.info("Button type: %s", type(button))
     
     kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [button]
-        ]
+        inline_keyboard=[[button]]
     )
     
-    # Dump fully serialized payload to logs
-    kb_dict = kb.model_dump() if hasattr(kb, 'model_dump') else kb.dict()
-    import json
-    log.info("Full keyboard serialized JSON: %s", json.dumps(kb_dict))
+    await message.answer(
+        WELCOME_HTML, 
+        reply_markup=kb, 
+        parse_mode=ParseMode.HTML
+    )
+    log.info("SENT WEBAPP BUTTON IN START CONTEXT.")
+
+@router.message()
+async def debug_all(message: Message):
+    # Логгируем все входящие, но НЕ отправляем WebApp кнопки для обычных сообщений
+    log.info("RAW MESSAGE UPDATE: %s", message)
+    log.info("IS_START_CONTEXT: False (Caught in fallback)")
+    log.info("IS_WEBAPP_CONTEXT: %s", bool(getattr(message, "web_app_data", None)))
     
-    await message.answer(WELCOME_HTML, reply_markup=kb, parse_mode=ParseMode.HTML)
+    if message.text and not message.text.startswith("/"):
+        await message.answer("Используйте /start или кнопку в меню для открытия магазина.")
+
+@router.callback_query()
+async def debug_callback(call: CallbackQuery):
+    log.info("RAW CALLBACK DATA: %s", call)
+    log.info("MESSAGE: %s", call.message)
+    log.info("INLINE KEYBOARD: %s", call.message.reply_markup if call.message else "None")
 
 
 async def main() -> None:
@@ -84,45 +98,37 @@ async def main() -> None:
         log.error("BOT_TOKEN не задан")
         sys.exit(1)
 
-    web_url = _web_app_url()
-
     bot = Bot(token)
     dp = Dispatcher()
     dp.include_router(router)
 
-    # Установка Menu Button (кнопка слева от ввода сообщения) в режим Web App
+    # Установка Menu Button
     try:
         from aiogram.types import MenuButtonWebApp, MenuButtonDefault, WebAppInfo as BotWebAppInfo
         from aiogram.types import BotCommand
         
-        # 1. Установка команд (меню "бургер" или список команд)
         await bot.set_my_commands([
             BotCommand(command="start", description="Запустить магазин")
         ])
 
-        # 2. Описание перед началом (что видит новый пользователь)
-        await bot.set_my_description(
-            "F 63.9 — украшения с душой. Нажмите «Старт» или кнопку «Открыть», чтобы перейти в каталог."
-        )
-        await bot.set_my_short_description(
-            "F 63.9: ювелирный магазин в вашем Telegram."
-        )
+        # Используем ПОЛНОСТЬЮ идентичный URL для Menu Button
+        web_url = _web_app_url()
+        log.info("MENU BUTTON URL EXACT (repr): %s", repr(web_url))
 
-        # 3. ОБЯЗАТЕЛЬНО сбросить и установить кнопку Web App
-        await bot.set_chat_menu_button(menu_button=MenuButtonDefault())
-        await asyncio.sleep(0.5) # Даем Telegram время на обработку сброса
-        
-        await bot.set_chat_menu_button(
-            menu_button=MenuButtonWebApp(
-                text="Открыть",
-                web_app=BotWebAppInfo(url="https://f639.up.railway.app")
-            )
+        menu_btn = MenuButtonWebApp(
+            text="Открыть",
+            web_app=BotWebAppInfo(url=web_url)
         )
-        log.info("Menu button and bot commands updated. WebApp URL: https://f639.up.railway.app")
+        
+        await bot.set_chat_menu_button(menu_button=MenuButtonDefault())
+        await asyncio.sleep(0.5)
+        await bot.set_chat_menu_button(menu_button=menu_btn)
+        
+        log.info("Menu button updated with: %s", menu_btn.model_dump())
     except Exception as e:
         log.error("Failed to update bot UI: %s", e)
 
-    log.info("Polling started; WEB_APP_URL=%s", web_url)
+    log.info("Polling started. Final URL check: %s", repr(_web_app_url()))
     await dp.start_polling(bot)
 
 
