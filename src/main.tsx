@@ -7,8 +7,10 @@ import App from './App.tsx';
 import './index.css';
 import { TelegramRouter } from './components/routing/TelegramRouter';
 import { bootstrapTelegramViewport } from './lib/telegramWebApp';
+import { bootstrapApp } from './lib/bootstrap';
 
 bootstrapTelegramViewport();
+bootstrapApp();
 
 const queryClient = new QueryClient({
   defaultOptions: {

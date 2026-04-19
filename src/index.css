@@ -8,30 +8,32 @@
      safe-area-inset-top, margin-top, or padding-top on html/body/#root
      ------------------------------------------------------------------- */
   html {
-    margin: 0 !important;
-    padding: 0 !important;
+    margin: 0;
+    padding: 0;
     background: #000;
-    height: var(--tg-height, 100%);
+    height: 100%;
     overflow: hidden;
   }
 
   body {
-    margin: 0 !important;
-    padding: 0 !important;
-    padding-top: 0 !important;
+    margin: 0;
+    padding: 0;
+    height: 100%;
     background-color: var(--app-bg);
     color: var(--app-text);
     -webkit-tap-highlight-color: transparent;
-    height: var(--tg-height, 100%);
     overscroll-behavior-y: none;
+    overflow: hidden;
   }
 
-  /* #root is now height-based to avoid conflict with Telegram fixed layout */
   #root {
-    height: var(--tg-height, 100vh);
+    position: fixed;
+    inset: 0;
+    height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   .no-scrollbar::-webkit-scrollbar {

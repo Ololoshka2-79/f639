@@ -13,7 +13,6 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { OrdersPage } from './pages/Placeholders';
 import { ProfilePage } from './pages/ProfilePage';
 import { RequireCart } from './components/routing/RequireCart';
-import { bootstrapApp } from './lib/bootstrap';
 import { analytics } from './lib/analytics';
 import { useAdminStore } from './store/adminStore';
 import { AdminToolbar } from './components/ui/AdminToolbar';
@@ -52,10 +51,8 @@ function App() {
       setAdminStatus(false);
     }
 
-    bootstrapApp().then(() => {
-      setLoading(false);
-      analytics.trackAppOpen();
-    });
+    setLoading(false);
+    analytics.trackAppOpen();
 
     return () => {
       cleanupSwipe?.();
@@ -96,7 +93,7 @@ function App() {
   const isImmersiveProductPage = location.pathname.startsWith('/product/');
 
   return (
-    <div className="min-h-[var(--tg-height,100vh)] w-full text-app-text transition-colors duration-500 overflow-x-hidden">
+    <div className="h-[var(--tg-height,100vh)] w-full text-app-text transition-colors duration-500 overflow-x-hidden relative">
       <ThemeManager />
       <AdminToolbar />
       <AnimatePresence>
