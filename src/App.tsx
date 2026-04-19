@@ -46,12 +46,12 @@ function App() {
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
     if (!tg) return;
-    tg.ready();
-    tg.expand();
+    tg.ready?.();
+    tg.expand?.();
     // Wave 2: next tick (catches cases where viewport isn't ready yet)
-    setTimeout(() => tg.expand(), 0);
+    setTimeout(() => tg.expand?.(), 0);
     // Wave 3: after first layout (catches slow iOS WebView)
-    setTimeout(() => tg.expand(), 150);
+    setTimeout(() => tg.expand?.(), 150);
   }, []);
 
   useEffect(() => {
