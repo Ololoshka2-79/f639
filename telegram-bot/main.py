@@ -100,14 +100,18 @@ async def main() -> None:
         )
 
         # 3. ОБЯЗАТЕЛЬНО сбросить и установить кнопку Web App
+        # Используем web_url из настроек и добавляем параметр версии для сброса кэша Telegram
         await bot.set_chat_menu_button(menu_button=MenuButtonDefault())
+        await asyncio.sleep(0.5) # Даем Telegram время на обработку сброса
+        
+        button_url = f"{web_url}?v=3"
         await bot.set_chat_menu_button(
             menu_button=MenuButtonWebApp(
                 text="Открыть",
-                web_app=BotWebAppInfo(url="https://f639.up.railway.app")
+                web_app=BotWebAppInfo(url=button_url)
             )
         )
-        log.info("Menu button and bot commands updated")
+        log.info("Menu button and bot commands updated. WebApp URL: %s", button_url)
     except Exception as e:
         log.error("Failed to update bot UI: %s", e)
 

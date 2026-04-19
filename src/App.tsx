@@ -62,8 +62,20 @@ function App() {
         isExpanded: anyTg.isExpanded,
       });
       tg.enableClosingConfirmation?.();
+      
+      // Force fullscreen expansion
       tg.expand?.();
+      
+      // Secondary attempt with delay for slower devices/clients
+      const expandTimer = setTimeout(() => {
+        tg.expand?.();
+        tg.ready?.();
+        console.log('[WebApp] Secondary expand called');
+      }, 500);
+
       tg.ready?.();
+
+      return () => clearTimeout(expandTimer);
     }
 
     const tgUser = tg?.initDataUnsafe?.user;
