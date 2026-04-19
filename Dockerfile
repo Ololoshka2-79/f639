@@ -3,6 +3,13 @@ FROM node:22-slim AS builder
 
 WORKDIR /app
 
+# Build-time args for Vite (baked into the bundle)
+# Default empty = use relative paths (works on any domain)
+ARG VITE_API_BASE_URL=""
+ARG VITE_API_FALLBACK_TO_MOCKS="false"
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_API_FALLBACK_TO_MOCKS=$VITE_API_FALLBACK_TO_MOCKS
+
 # Copy dependency files first for better layer caching
 COPY package.json package-lock.json ./
 

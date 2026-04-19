@@ -1,7 +1,8 @@
 /** When true, failed API calls return local mock data. When false in production, errors propagate. */
 export function shouldUseApiMockFallback(): boolean {
   const v = import.meta.env.VITE_API_FALLBACK_TO_MOCKS;
-  if (v === 'true') return true;
+  // If explicitly set to 'false', respect that
   if (v === 'false') return false;
-  return import.meta.env.DEV;
+  // Otherwise always fall back to mocks (in dev and prod without explicit config)
+  return true;
 }

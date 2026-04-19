@@ -80,6 +80,21 @@ export const useProductStore = create<ProductStore>()(
         return { products: [...nonCategoryProducts, ...sortedCategoryProducts] };
       }),
     }),
-    { name: 'f639-products-v4' }
+    {
+      name: 'f639-products-v5',
+      // Migrate old data: ensure gallery is always an array
+      merge: (persisted: unknown, current) => {
+        const p = persisted as Partial<typeof current>;
+        return {
+          ...current,
+          ...p,
+          products: (p.products ?? current.products).map((prod) => ({
+            ...prod,
+            gallery: Array.isArray(prod.gallery) ? prod.gallery : [],
+            gallery_public_ids: Array.isArray(prod.gallery_public_ids) ? prod.gallery_public_ids : [],
+          })),
+        };
+      },
+    }
   )
 );
