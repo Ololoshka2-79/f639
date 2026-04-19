@@ -1,10 +1,9 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ProductCard } from '../components/ui/ProductCard';
 import { useMergedCatalogProducts } from '../hooks/useMergedCatalogProducts';
 import { ChevronRight, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../lib/api/endpoints';
 
 import { useUIStore } from '../store/uiStore';
 import { useAdminStore } from '../store/adminStore';
