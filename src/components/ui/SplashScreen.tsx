@@ -14,41 +14,28 @@ export const SplashScreen: React.FC<{ onComplete: () => void }> = ({ onComplete 
         {/* Centered Pendant Heart */}
         <div className="mb-12 w-48 h-56 relative flex justify-center">
           <svg viewBox="0 0 200 240" className="w-full h-full overflow-visible neon-stroke-white">
-            {/* Pendant Loop (Top) */}
-            <motion.circle
-              cx="100"
-              cy="25"
-              r="8"
-              stroke="white"
-              strokeWidth="2.5"
-              fill="none"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1 }}
-            />
-            
-            {/* Elegant Balanced Heart Lobe - Left */}
+            {/* Precise Heart Contour from Image - Lobe Left */}
             <motion.path
-              d="M 100,33 C 60,33 20,80 20,145 C 20,205 85,225 96,232"
+              d="M 130,85 C 130,85 110,40 60,65 C 20,95 25,185 125,235 C 125,235 125,235 125,235"
               stroke="white"
-              strokeWidth="4"
+              strokeWidth="6"
               strokeLinecap="round"
               fill="none"
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ duration: 2, ease: "easeInOut" }}
+              transition={{ duration: 1.8, ease: "easeInOut" }}
             />
             
-            {/* Elegant Balanced Heart Lobe - Right */}
+            {/* Precise Heart Contour from Image - Lobe Right */}
             <motion.path
-              d="M 100,33 C 140,33 180,80 180,145 C 180,205 115,225 104,232"
+              d="M 125,235 C 170,215 220,165 220,110 C 220,70 160,75 145,105"
               stroke="white"
-              strokeWidth="4"
+              strokeWidth="6"
               strokeLinecap="round"
               fill="none"
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ duration: 2, ease: "easeInOut" }}
+              transition={{ duration: 1.5, ease: "easeInOut", delay: 1.2 }}
             />
           </svg>
         </div>
