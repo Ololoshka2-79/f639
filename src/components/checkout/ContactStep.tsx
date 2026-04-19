@@ -7,23 +7,20 @@ export const ContactStep: React.FC = () => {
 
   const handleChange = (field: string, value: string) => {
     if (field === 'phone') {
-      let cleaned = value.replace(/[^+0-9]/g, '');
+      const digits = value.replace(/\D/g, '');
       
-      // Ensure it starts with +7
-      if (!cleaned.startsWith('+')) {
-        cleaned = '+' + cleaned;
-      }
-      if (!cleaned.startsWith('+7')) {
-        // If they try to delete the 7, put it back or if they type something else after +
-        cleaned = '+7' + cleaned.substring(1).replace('7', '');
-      }
-      
-      // Simple logic: if empty or just '+', make it '+7'
-      if (cleaned === '+' || cleaned === '') {
-        cleaned = '+7';
+      if (digits.length === 0) {
+        setContactInfo({ [field]: '+7' });
+        return;
       }
 
-      setContactInfo({ [field]: cleaned });
+      let coreDigits = digits;
+      if (digits.startsWith('7') || digits.startsWith('8')) {
+        coreDigits = digits.substring(1);
+      }
+
+      const limitedCore = coreDigits.substring(0, 10);
+      setContactInfo({ [field]: '+7' + limitedCore });
       return;
     }
     setContactInfo({ [field]: value });

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckoutHeader } from '../components/checkout/CheckoutHeader';
@@ -48,7 +48,7 @@ export const CheckoutPage: React.FC = () => {
     }
   }, [checkoutItems, checkoutTotal]);
 
-  const phoneOk = phoneDigitsCount(contactInfo.phone) >= 10;
+  const phoneOk = phoneDigitsCount(contactInfo.phone) === 11;
 
   const isStepValid = (() => {
     switch (currentStep) {
@@ -76,7 +76,7 @@ export const CheckoutPage: React.FC = () => {
   const validationHint = (): string => {
     const parts: string[] = [];
     if (contactInfo.name.trim().length < 2) parts.push('укажите имя');
-    if (!phoneOk) parts.push('укажите телефон (не меньше 10 цифр)');
+    if (!phoneOk) parts.push('укажите полный номер телефона (10 цифр после +7)');
     if (!deliveryOk) parts.push('укажите адрес пункта выдачи (от 8 символов)');
     if (parts.length === 0) return 'Проверьте данные заказа.';
     return `Не хватает данных: ${parts.join('; ')}.`;

@@ -85,22 +85,21 @@ function App() {
     const tg = window.Telegram?.WebApp;
     const startParam = (tg?.initDataUnsafe as any)?.start_param;
 
-    // Инициализация маршрутизации
-    if (startParam === 'store' || startParam === 'catalog') {
-      console.log('[Routing] Initializing at catalog');
-      navigate('/catalog', { replace: true });
-    } else if (startParam && startParam.startsWith('product_')) {
-      const productId = startParam.replace('product_', '');
-      console.log('[Routing] Initializing at product (new prefix):', productId);
-      navigate(`/product/${productId}`, { replace: true });
-    } else if (startParam && startParam.startsWith('p_')) {
-      const productId = startParam.substring(2);
-      console.log('[Routing] Initializing at product (old prefix):', productId);
-      navigate(`/product/${productId}`, { replace: true });
-    } else {
-      console.log('[Routing] Initializing at home fallback');
-      navigate('/', { replace: true });
-    }
+    // ❗ ВСЕГДА сначала главная
+    navigate('/', { replace: true });
+
+    // только после этого — ручная маршрутизация
+    setTimeout(() => {
+      if (startParam && startParam.startsWith('product_')) {
+        const productId = startParam.replace('product_', '');
+        console.log('[Routing] Initializing at product (new prefix):', productId);
+        navigate(`/product/${productId}`, { replace: true });
+      } else if (startParam && startParam.startsWith('p_')) {
+        const productId = startParam.substring(2);
+        console.log('[Routing] Initializing at product (old prefix):', productId);
+        navigate(`/product/${productId}`, { replace: true });
+      }
+    }, 0);
   }, []); // Run exactly once on mount
 
   // Sync Safe Areas from Telegram

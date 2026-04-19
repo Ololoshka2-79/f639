@@ -83,7 +83,11 @@ async def main() -> None:
 
     # Установка Menu Button (кнопка слева от ввода сообщения) в режим Web App
     try:
-        from aiogram.types import MenuButtonWebApp, WebAppInfo as BotWebAppInfo
+        from aiogram.types import MenuButtonWebApp, MenuButtonDefault, WebAppInfo as BotWebAppInfo
+        
+        # ОБЯЗАТЕЛЬНО сбросить старую кнопку:
+        await bot.set_chat_menu_button(menu_button=MenuButtonDefault())
+
         await bot.set_chat_menu_button(
             menu_button=MenuButtonWebApp(
                 text="Открыть",
