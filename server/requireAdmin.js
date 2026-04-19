@@ -7,15 +7,25 @@ export function requireAdmin(req, res, next) {
     req.headers['x-tg-init-data'] ||
     '';
 
-  const verified = validateTelegramInitData(String(initData), config.telegramBotToken);
+  console.log('[requireAdmin] Debug: Received initData length:', initData.length);
+
+  const verified = validateTelegramInitData(
+    String(initData),
+    config.telegramBotToken
+  );
+
   if (!verified.valid || !verified.user) {
-    console.error('[requireAdmin] Forbidden: invalid telegram signature or data missing');
+    console.error('[requireAdmin] Forbidden: invalid telegram signature or data missing. Token length:', config.telegramBotToken?.length || 0);
     return res.status(403).json({ message: 'Forbidden: invalid telegram signature' });
   }
 
-  const isAdmin = config.adminIds.includes(verified.user.id);
-  if (!isAdmin) {
-    console.warn(`[requireAdmin] Forbidden: user ${verified.user.id} is not in ADMIN_IDS list:`, config.adminIds);
+  const adminIds = config.adminIds.map(id => Number(id));
+  const userId = Number(verified.user.id);
+
+  console.log('[requireAdmin] Admin check:', { userId, adminIds });
+
+  if (!adminIds.includes(userId)) {
+    console.warn(`[requireAdmin] Forbidden: user ${userId} is not in ADMIN_IDS list:`, adminIds);
     return res.status(403).json({ message: 'Forbidden: user is not admin' });
   }
 
