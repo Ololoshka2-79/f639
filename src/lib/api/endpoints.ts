@@ -61,9 +61,6 @@ function resolveUploadBaseUrl(): string {
 
   const apiBase = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/$/, '');
   if (!apiBase) {
-    if (typeof window !== 'undefined') {
-      return `${window.location.origin}/v1`;
-    }
     return '';
   }
   return apiBase;
