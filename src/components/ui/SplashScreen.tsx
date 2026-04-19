@@ -6,70 +6,83 @@ export const SplashScreen: React.FC<{ onComplete: () => void }> = ({ onComplete 
     <motion.div
       initial={{ opacity: 1 }}
       animate={{ opacity: 0 }}
-      transition={{ delay: 3.5, duration: 1, ease: "easeInOut" }}
+      transition={{ delay: 4, duration: 1, ease: "easeInOut" }}
       onAnimationComplete={onComplete}
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black"
     >
-      <div className="relative flex flex-col items-center max-w-xs w-full">
-        {/* Main Logo Container - Side by Side like in the photo */}
-        <div className="flex items-center justify-center w-full gap-6">
-          {/* Stylized Heart Drawing */}
-          <div className="w-32 h-32 relative flex-shrink-0">
-            <svg viewBox="0 0 240 240" className="w-full h-full overflow-visible neon-stroke-white">
-              {/* Left Stroke of the Heart - Larger and lower */}
-              <motion.path
-                d="M 120,70 C 80,20 20,60 20,130 C 20,200 100,240 140,250 C 170,260 160,200 130,180 C 110,165 90,180 95,205"
-                stroke="white"
-                strokeWidth="5"
-                strokeLinecap="round"
-                fill="none"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 2.2, ease: "easeInOut" }}
-              />
-              {/* Right Stroke of the Heart - Smaller and higher */}
-              <motion.path
-                d="M 120,70 C 150,35 210,60 210,110 C 210,160 160,180 130,165 C 110,155 125,120 150,125"
-                stroke="white"
-                strokeWidth="5"
-                strokeLinecap="round"
-                fill="none"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 1.8, ease: "easeInOut", delay: 0.6 }}
-              />
-            </svg>
-          </div>
-
-          {/* Branding Text */}
-          <div className="flex flex-col items-start">
-            <motion.h1
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 1.2, duration: 1 }}
-              className="text-6xl font-serif text-white neon-text-white leading-none"
-            >
-              f 63.9
-            </motion.h1>
-            
-            <motion.p
+      <div className="relative flex flex-col items-center">
+        {/* Centered Pendant Heart */}
+        <div className="mb-12 w-48 h-56 relative flex justify-center">
+          <svg viewBox="0 0 200 240" className="w-full h-full overflow-visible neon-stroke-white">
+            {/* Pendant Loop (Top) */}
+            <motion.circle
+              cx="100"
+              cy="20"
+              r="6"
+              stroke="white"
+              strokeWidth="2"
+              fill="none"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 2.0, duration: 1 }}
-              className="mt-1 text-[14px] tracking-[0.4em] text-white/80 font-serif"
-            >
-              &lt;code of love&gt;
-            </motion.p>
-          </div>
+              transition={{ duration: 1 }}
+            />
+            
+            {/* Left Lobe - Elegant Jewelry Line */}
+            <motion.path
+              d="M 100,26 L 100,45 C 60,45 20,90 20,150 C 20,210 80,230 92,235"
+              stroke="white"
+              strokeWidth="3"
+              strokeLinecap="round"
+              fill="none"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 2, ease: "easeInOut" }}
+            />
+            
+            {/* Right Lobe - Elegant Jewelry Line */}
+            <motion.path
+              d="M 100,26 L 100,45 C 140,45 180,90 180,150 C 180,210 120,230 108,235"
+              stroke="white"
+              strokeWidth="3"
+              strokeLinecap="round"
+              fill="none"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 2, ease: "easeInOut" }}
+            />
+          </svg>
+        </div>
+
+        {/* Branding Text - Refined and Elegant */}
+        <div className="text-center">
+          <motion.h1
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 1.5, duration: 1.2 }}
+            style={{ fontFamily: '"Bodoni Moda", serif' }}
+            className="text-5xl font-normal tracking-[0.1em] text-white neon-text-white mb-3"
+          >
+            f 63.9
+          </motion.h1>
+          
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 2.5, duration: 1 }}
+            style={{ fontFamily: '"Bodoni Moda", serif' }}
+            className="text-[12px] tracking-[0.8em] text-white/60 uppercase font-light"
+          >
+            code of love
+          </motion.p>
         </div>
       </div>
 
-      {/* Background Ambience */}
+      {/* Decorative Background Glow */}
       <motion.div 
         initial={{ opacity: 0 }}
-        animate={{ opacity: 0.05 }}
-        transition={{ duration: 3 }}
-        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.15)_0%,transparent_70%)]"
+        animate={{ opacity: 0.1 }}
+        transition={{ duration: 4 }}
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_0%,transparent_70%)]"
       />
     </motion.div>
   );
