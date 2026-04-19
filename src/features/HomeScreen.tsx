@@ -4,6 +4,7 @@ import { ProductCard } from '../components/ui/ProductCard';
 import { useMergedCatalogProducts } from '../hooks/useMergedCatalogProducts';
 import { ChevronRight, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../lib/api/endpoints';
 
 import { useUIStore } from '../store/uiStore';
 import { useAdminStore } from '../store/adminStore';
@@ -33,44 +34,15 @@ export const HomeScreen: React.FC = () => {
     setHomeHeroData({ [field]: value });
   };
 
-  const compressImageToDataUrl = async (file: File): Promise<string> => {
-    const fileDataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(reader.error ?? new Error('Image read failed'));
-      reader.readAsDataURL(file);
-    });
-
-    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error('Image decode failed'));
-      img.src = fileDataUrl;
-    });
-
-    const maxSide = 1600;
-    const ratio = Math.min(1, maxSide / Math.max(image.width, image.height));
-    const width = Math.max(1, Math.round(image.width * ratio));
-    const height = Math.max(1, Math.round(image.height * ratio));
-
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return fileDataUrl;
-    ctx.drawImage(image, 0, 0, width, height);
-
-    return canvas.toDataURL('image/jpeg', 0.84);
-  };
-
   const handleHeroFiles = async (files: FileList | null) => {
     const file = files?.[0];
     if (!file) return;
     try {
-      const compressed = await compressImageToDataUrl(file);
-      setHomeHeroData({ image: compressed });
+      const result = await api.admin.uploadImage(file);
+      setHomeHeroData({ image: result.url });
       haptics.success();
-    } catch {
+    } catch (err) {
+      console.error('[HomeScreen] Hero upload failed:', err);
       haptics.error();
     }
   };

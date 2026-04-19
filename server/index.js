@@ -15,6 +15,7 @@ import {
 } from './productRepository.js';
 import { saveOrder, listOrdersByUserId } from './orderRepository.js';
 import { validateTelegramInitData } from './telegramAuth.js';
+import { getSettings, updateSettings } from './settingsRepository.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -272,6 +273,25 @@ app.get('/orders', handleGetOrders);
 app.get('/v1/orders', handleGetOrders);
 app.post('/orders', handlePostOrder);
 app.post('/v1/orders', handlePostOrder);
+
+// --- Settings Endpoints ---
+app.get('/settings', async (_req, res) => {
+  const settings = await getSettings();
+  res.json(settings);
+});
+app.get('/v1/settings', async (_req, res) => {
+  const settings = await getSettings();
+  res.json(settings);
+});
+
+app.post('/settings', requireAdmin, async (req, res) => {
+  const settings = await updateSettings(req.body);
+  res.json(settings);
+});
+app.post('/v1/settings', requireAdmin, async (req, res) => {
+  const settings = await updateSettings(req.body);
+  res.json(settings);
+});
 
 app.use((error, _req, res, _next) => {
   if (error?.code === 'LIMIT_FILE_SIZE' || error?.message?.includes('File too large')) {

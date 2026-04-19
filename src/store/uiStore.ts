@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { api } from '../lib/api/endpoints';
 
 interface UIState {
   homeHeroTitle: string;
@@ -11,6 +12,7 @@ interface UIState {
   categoryNames: Record<string, string>;
   profileFlair: string;
   profileMenuLabels: Record<string, string>;
+  fetchSettings: () => Promise<void>;
   setHomeHeroData: (data: { title?: string, subtitle?: string, image?: string, sectionTitle?: string, sectionSubtitle?: string }) => void;
   setCategoryName: (id: string, name: string) => void;
   setProfileData: (data: { flair?: string }) => void;
@@ -20,7 +22,7 @@ interface UIState {
 
 export const useUIStore = create<UIState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       homeHeroTitle: 'Elite Jewels Collection',
       homeHeroSubtitle: 'New Season',
       homeHeroImage: '/images/hero.png',
@@ -30,25 +32,55 @@ export const useUIStore = create<UIState>()(
       categoryNames: {},
       profileFlair: 'Platinum Member',
       profileMenuLabels: {},
-      setHomeHeroData: (data) => set((state) => ({ 
-        homeHeroTitle: data.title ?? state.homeHeroTitle,
-        homeHeroSubtitle: data.subtitle ?? state.homeHeroSubtitle,
-        homeHeroImage: data.image ?? state.homeHeroImage,
-        homeSectionTitle: data.sectionTitle ?? state.homeSectionTitle,
-        homeSectionSubtitle: data.sectionSubtitle ?? state.homeSectionSubtitle,
-      })),
-      setCategoryName: (id, name) => set((state) => ({
-        categoryNames: { ...state.categoryNames, [id]: name }
-      })),
-      setProfileData: (data) => set((state) => ({
-        profileFlair: data.flair ?? state.profileFlair,
-      })),
-      setProfileMenuLabel: (index, label) => set((state) => ({
-        profileMenuLabels: { ...state.profileMenuLabels, [index.toString()]: label }
-      })),
-      setCustomBadgeLabel: (key, label) => set((state) => ({
-        customBadgeLabels: { ...state.customBadgeLabels, [key]: label }
-      })),
+
+      fetchSettings: async () => {
+        try {
+          const settings = await api.settings.get();
+          if (settings) {
+            set(settings);
+          }
+        } catch (err) {
+          console.warn('[UIStore] Failed to fetch settings from server:', err);
+        }
+      },
+
+      setHomeHeroData: (data) => {
+        const newState = { 
+          homeHeroTitle: data.title ?? get().homeHeroTitle,
+          homeHeroSubtitle: data.subtitle ?? get().homeHeroSubtitle,
+          homeHeroImage: data.image ?? get().homeHeroImage,
+          homeSectionTitle: data.sectionTitle ?? get().homeSectionTitle,
+          homeSectionSubtitle: data.sectionSubtitle ?? get().homeSectionSubtitle,
+        };
+        set(newState);
+        api.settings.update(newState).catch(err => console.error('Failed to sync settings:', err));
+      },
+      
+      setCategoryName: (id, name) => {
+        const categoryNames = { ...get().categoryNames, [id]: name };
+        set({ categoryNames });
+        api.settings.update({ categoryNames }).catch(err => console.error('Failed to sync settings:', err));
+      },
+
+      setProfileData: (data) => {
+        const newState = { 
+          profileFlair: data.flair ?? get().profileFlair,
+        };
+        set(newState);
+        api.settings.update(newState).catch(err => console.error('Failed to sync settings:', err));
+      },
+
+      setProfileMenuLabel: (index, label) => {
+        const profileMenuLabels = { ...get().profileMenuLabels, [index.toString()]: label };
+        set({ profileMenuLabels });
+        api.settings.update({ profileMenuLabels }).catch(err => console.error('Failed to sync settings:', err));
+      },
+
+      setCustomBadgeLabel: (key, label) => {
+        const customBadgeLabels = { ...get().customBadgeLabels, [key]: label };
+        set({ customBadgeLabels });
+        api.settings.update({ customBadgeLabels }).catch(err => console.error('Failed to sync settings:', err));
+      },
     }),
     { name: 'f639-ui-storage' }
   )

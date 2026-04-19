@@ -15,6 +15,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { RequireCart } from './components/routing/RequireCart';
 import { analytics } from './lib/analytics';
 import { useAdminStore } from './store/adminStore';
+import { useUIStore } from './store/uiStore';
 import { AdminToolbar } from './components/ui/AdminToolbar';
 const AnalyticsPage = lazy(() =>
   import('./pages/admin/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage }))
@@ -163,6 +164,11 @@ function App() {
     // Reset counter after 5s of inactivity
     setTimeout(() => setClickCount(0), 5000);
   };
+  
+  const { fetchSettings } = useUIStore();
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   // Determine active tab from location
   const getActiveTab = () => {

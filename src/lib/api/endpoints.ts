@@ -243,4 +243,14 @@ export const api = {
       }
     },
   },
+  settings: {
+    get: async () => {
+      const response = await apiClient.get('/settings');
+      return response.data;
+    },
+    update: async (data: Record<string, any>) => {
+      const response = await apiClient.post('/settings', data);
+      return response.data;
+    },
+  },
 };
