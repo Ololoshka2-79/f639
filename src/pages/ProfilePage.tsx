@@ -4,16 +4,14 @@ import { useThemeStore } from '../store/themeStore';
 import type { ThemeMode } from '../store/themeStore';
 import { useHaptics } from '../hooks/useHaptics';
 import { useOrderStore } from '../store/orderStore';
-import { useCheckoutStore } from '../store/checkoutStore';
 import { useLocation } from 'react-router-dom';
 import { useProfileNavStore } from '../store/profileNavStore';
 import {
-  ShoppingBag,
+  MapPin,
   Moon,
   Sun,
   Monitor,
   ChevronRight,
-  MapPin,
   MessageCircle,
   Copy,
   Check,
@@ -21,8 +19,7 @@ import {
 
 export const ProfilePage: React.FC = () => {
   const { mode, setMode } = useThemeStore();
-  const { orders } = useOrderStore();
-  const { deliveryData } = useCheckoutStore();
+  const { savedAddresses } = useOrderStore();
   const location = useLocation();
   const haptics = useHaptics();
   const subScreen = useProfileNavStore((s) => s.subScreen);
@@ -58,8 +55,7 @@ export const ProfilePage: React.FC = () => {
   };
 
   const menuItems = [
-    { id: 'orders', icon: <ShoppingBag size={20} />, label: 'Мои заказы', count: orders.length },
-    { id: 'address', icon: <MapPin size={20} />, label: 'Адреса доставки', count: deliveryData.address ? 1 : 0 },
+    { id: 'address', icon: <MapPin size={20} />, label: 'Адреса доставки', count: savedAddresses.length },
     { id: 'help', icon: <MessageCircle size={20} />, label: 'Помощь', count: null },
   ];
 
@@ -78,13 +74,11 @@ export const ProfilePage: React.FC = () => {
   };
 
   const subTitle =
-    subScreen === 'orders'
-      ? 'Мои заказы'
-      : subScreen === 'address'
-        ? 'Адреса доставки'
-        : subScreen === 'help'
-          ? 'Помощь'
-          : '';
+    subScreen === 'address'
+      ? 'Адреса доставки'
+      : subScreen === 'help'
+        ? 'Помощь'
+        : '';
 
   return (
     <div className="min-h-screen bg-app-bg pb-32 pt-12">
@@ -182,85 +176,36 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             <div className="scrollbar-hide flex-1 overflow-y-auto p-6">
-              {subScreen === 'orders' && (
-                <div className="space-y-4">
-                  {orders.length > 0 ? (
-                    orders.map((order) => (
-                      <div key={order.id} className="space-y-4 rounded-2xl border border-app-border bg-app-surface-1 p-4">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="mb-1 text-[10px] uppercase tracking-widest text-app-text-muted">
-                              Заказ #{order.id.split('-')[0].toUpperCase()}
-                            </p>
-                            <p className="font-serif text-sm text-app-text">{order.total.toLocaleString()} ₽</p>
-                          </div>
-                          <span
-                            className={`rounded-full px-2 py-1 text-[9px] font-bold uppercase tracking-widest ${
-                              order.status === 'completed'
-                                ? 'bg-success/20 text-success'
-                                : 'bg-app-accent/20 text-app-accent'
-                            }`}
-                          >
-                            {order.status === 'paid'
-                              ? 'Оплачен'
-                              : order.status === 'completed'
-                                ? 'Доставлен'
-                                : order.status === 'cancelled'
-                                  ? 'Отменен'
-                                  : 'В работе'}
-                          </span>
-                        </div>
-
-                        <div className="text-[11px] leading-relaxed text-app-text-muted">
-                          <p>{order.deliveryAddress}</p>
-                        </div>
-
-                        {order.status !== 'completed' && order.status !== 'cancelled' && (
-                          <button
-                            type="button"
-                            onClick={handleOpenSupport}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-app-border-strong py-3 text-[9px] font-bold uppercase tracking-widest text-app-text-muted transition-all hover:border-app-accent/30 hover:text-app-accent"
-                          >
-                            <MessageCircle size={14} /> Связаться по заказу
-                          </button>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="py-20 text-center text-app-text-muted">Нет активных заказов</div>
-                  )}
-                </div>
-              )}
-
               {subScreen === 'address' && (
                 <div className="space-y-4">
-                  {deliveryData.address ? (
-                    <div className="relative group overflow-hidden rounded-2xl border border-app-accent/20 bg-app-surface-1 p-5 transition-all active:scale-[0.99]" onClick={() => handleCopyAddr(deliveryData.address)}>
-                      <div className="flex gap-4">
-                        <MapPin size={20} className="mt-1 flex-shrink-0 text-app-accent" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-app-text leading-relaxed">{deliveryData.address}</p>
-                          <p className="mt-2 text-[10px] uppercase tracking-widest text-app-text-muted">
-                            Последний адрес из оформления
-                          </p>
-                        </div>
-                        <div className="flex flex-col items-center justify-center gap-1 min-w-[60px]">
-                           <div className={`rounded-full p-2 transition-all ${copiedAddr ? 'bg-success/20 text-success' : 'bg-app-accent/10 text-app-accent'}`}>
-                             {copiedAddr ? <Check size={16} /> : <Copy size={16} />}
-                           </div>
-                           <span className="text-[8px] font-bold uppercase tracking-wider text-app-text-muted">
-                             {copiedAddr ? 'Готово' : 'Копия'}
-                           </span>
+                  {savedAddresses.length > 0 ? (
+                    savedAddresses.map((addr, idx) => (
+                      <div 
+                        key={idx} 
+                        className="relative group overflow-hidden rounded-2xl border border-app-accent/20 bg-app-surface-1 p-5 transition-all active:scale-[0.99] cursor-pointer" 
+                        onClick={() => handleCopyAddr(addr)}
+                      >
+                        <div className="flex gap-4">
+                          <MapPin size={20} className="mt-1 flex-shrink-0 text-app-accent" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-app-text leading-relaxed">{addr}</p>
+                          </div>
+                          <div className="flex flex-col items-center justify-center gap-1 min-w-[60px]">
+                             <div className={`rounded-full p-2 transition-all ${copiedAddr ? 'bg-success/20 text-success' : 'bg-app-accent/10 text-app-accent'}`}>
+                               {copiedAddr ? <Check size={16} /> : <Copy size={16} />}
+                             </div>
+                             <span className="text-[8px] font-bold uppercase tracking-wider text-app-text-muted">
+                               {copiedAddr ? 'Готово' : 'Копия'}
+                             </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ))
                   ) : (
                     <p className="py-20 text-center text-app-text-muted">История адресов пуста</p>
                   )}
                 </div>
               )}
-
-
             </div>
           </motion.div>
         )}

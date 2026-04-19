@@ -14,9 +14,11 @@ export interface Order {
 interface OrderState {
   orders: Order[];
   orderedPvzIds: string[];
+  savedAddresses: string[];
   notificationsEnabled: boolean;
   addOrder: (order: Order) => void;
   addPvzId: (id: string) => void;
+  addSavedAddress: (address: string) => void;
   updateOrderStatus: (id: string, status: OrderStatus) => void;
   toggleNotifications: () => void;
 }
@@ -26,6 +28,7 @@ export const useOrderStore = create<OrderState>()(
     (set) => ({
       orders: [],
       orderedPvzIds: [],
+      savedAddresses: [],
       notificationsEnabled: true,
       addOrder: (order) => set((state) => ({ 
         orders: [order, ...state.orders] 
@@ -33,6 +36,11 @@ export const useOrderStore = create<OrderState>()(
       addPvzId: (id) => set((state) => ({
         orderedPvzIds: state.orderedPvzIds.includes(id) ? state.orderedPvzIds : [...state.orderedPvzIds, id]
       })),
+      addSavedAddress: (address) => set((state) => {
+        const addr = address.trim();
+        if (!addr || state.savedAddresses.includes(addr)) return state;
+        return { savedAddresses: [addr, ...state.savedAddresses] };
+      }),
       updateOrderStatus: (id, status) => set((state) => ({
         orders: state.orders.map(o => o.id === id ? { ...o, status } : o)
       })),

@@ -121,7 +121,7 @@ export const CheckoutPage: React.FC = () => {
 
       const { orderId } = await api.orders.create(orderData);
 
-      const { addOrder } = useOrderStore.getState();
+      const { addOrder, addSavedAddress } = useOrderStore.getState();
       addOrder({
         id: orderId,
         status: 'awaiting_payment',
@@ -130,6 +130,9 @@ export const CheckoutPage: React.FC = () => {
         items: checkoutItems,
         deliveryAddress: deliveryData.address,
       });
+
+      // ✅ Сохраняем адрес в историю адресов (Bug fix)
+      addSavedAddress(deliveryData.address);
 
       const tg = window.Telegram?.WebApp;
       const tgUser = tg?.initDataUnsafe?.user;
