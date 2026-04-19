@@ -48,35 +48,31 @@ function App() {
   const { setAdminStatus, allowedIds } = useAdminStore();
 
   useEffect(() => {
-    const tg = window.Telegram?.WebApp;
     let cleanupSwipe: (() => void) | undefined;
+    const anyTg = tg as any;
 
-    if (tg) {
-      const anyTg = tg as any;
-      console.log('LAUNCH MODE DEBUG', {
-        href: window.location.href,
-        initData: anyTg.initData,
-        initDataUnsafe: anyTg.initDataUnsafe,
-        platform: anyTg.platform,
-        version: anyTg.version,
-        isExpanded: anyTg.isExpanded,
-      });
-      tg.enableClosingConfirmation?.();
-      
-      // Force fullscreen expansion
-      tg.expand?.();
-      
-      // Secondary attempt with delay for slower devices/clients
-      const expandTimer = setTimeout(() => {
-        tg.expand?.();
-        tg.ready?.();
-        console.log('[WebApp] Secondary expand called');
-      }, 500);
+    console.log('LAUNCH MODE DEBUG', {
+      href: window.location.href,
+      initData: anyTg?.initData,
+      initDataUnsafe: anyTg?.initDataUnsafe,
+      platform: anyTg?.platform,
+      version: anyTg?.version,
+      isExpanded: anyTg?.isExpanded,
+    });
+    
+    tg?.enableClosingConfirmation?.();
+    
+    // Force fullscreen expansion
+    tg?.expand?.();
+    
+    // Secondary attempt with delay for slower devices/clients
+    const expandTimer = setTimeout(() => {
+      tg?.expand?.();
+      tg?.ready?.();
+      console.log('[WebApp] Secondary expand called');
+    }, 500);
 
-      tg.ready?.();
-
-      return () => clearTimeout(expandTimer);
-    }
+    tg?.ready?.();
 
     const tgUser = tg?.initDataUnsafe?.user;
     const isAllowedAdmin = tgUser && allowedIds.includes(tgUser.id.toString());
@@ -90,13 +86,13 @@ function App() {
     analytics.trackAppOpen();
 
     return () => {
+      clearTimeout(expandTimer);
       cleanupSwipe?.();
     };
-  }, [setAdminStatus, allowedIds]);
+  }, [setAdminStatus, allowedIds, tg]);
 
   // Separate useEffect for initial routing to ensure it only runs ONCE on mount
   useEffect(() => {
-    const tg = window.Telegram?.WebApp;
     const startParam = (tg?.initDataUnsafe as any)?.start_param;
 
     // ❗ ВСЕГДА сначала главная
