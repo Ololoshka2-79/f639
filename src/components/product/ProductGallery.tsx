@@ -61,19 +61,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     }
   }, [isFullscreen]);
 
-  const handleNext = () => {
-    if (currentIndex < images.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-      haptics.selection();
-    }
-  };
 
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
-      haptics.selection();
-    }
-  };
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
