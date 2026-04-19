@@ -138,9 +138,20 @@ async def main() -> None:
     dp = Dispatcher()
     dp.include_router(router)
 
-    # Бот теперь не управляет кнопками и командами программно,
-    # чтобы использовать только настройки из BotFather.
-    log.info("Bot commands and menu button management removed.")
+    # Установка Menu Button в дефолтное состояние («кнопка меню» слева),
+    # чтобы она вела на список команд (/start), запуская цепочку через startapp.
+    try:
+        from aiogram.types import MenuButtonDefault, BotCommand
+        
+        await bot.set_my_commands([
+            BotCommand(command="start", description="Открыть магазин 💎")
+        ])
+
+        await bot.set_chat_menu_button(menu_button=MenuButtonDefault())
+        
+        log.info("Menu button set to Default (commands mode) to force startapp flow.")
+    except Exception as e:
+        log.error("Failed to update bot UI: %s", e)
 
     log.info("Polling started. Final URL check: %s", repr(_web_app_url()))
     await dp.start_polling(bot)

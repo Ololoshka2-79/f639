@@ -209,7 +209,7 @@ function App() {
       {!loading && (
         <>
           {!isImmersiveProductPage && (
-            <header className="absolute left-0 right-0 z-40 p-6 flex items-center justify-between pointer-events-none" style={{ top: 'env(safe-area-inset-top)' }}>
+            <header className="absolute left-0 right-0 z-40 p-6 flex items-center justify-between pointer-events-none" style={{ top: 'calc(var(--tg-safe-top, 0px) + 30px)' }}>
               <h1
                 className="text-xl font-serif tracking-[0.2em] text-app-accent uppercase cursor-pointer pointer-events-auto"
                 onClick={() => { 
@@ -231,7 +231,7 @@ function App() {
           {/* Main Content */}
           <main 
             style={{ 
-              paddingTop: isImmersiveProductPage ? '0' : 'calc(env(safe-area-inset-top) + 60px)',
+              paddingTop: isImmersiveProductPage ? '0' : 'calc(var(--tg-safe-top, 0px) + 95px)',
               minHeight: '100vh'
             }}
           >
