@@ -12,7 +12,7 @@ import { useOrderStore } from '../store/orderStore';
 import { useHaptics } from '../hooks/useHaptics';
 import { api } from '../lib/api/endpoints';
 import { analytics } from '../lib/analytics';
-import { formatLeadOrderNotification, sendAdminNotification } from '../lib/telegramBot';
+
 
 const ADDR_MIN = 8;
 
