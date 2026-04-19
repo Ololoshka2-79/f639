@@ -157,6 +157,8 @@ function App() {
   };
   const isImmersiveProductPage = location.pathname.startsWith('/product/');
 
+  const [debugOverlay, setDebugOverlay] = useState(false);
+
   return (
     <div className="h-[var(--tg-height,100vh)] w-full text-app-text transition-colors duration-500 overflow-x-hidden relative">
       <ThemeManager />
@@ -167,13 +169,35 @@ function App() {
         )}
       </AnimatePresence>
 
+      {/* DEBUG OVERLAY (Tap logo 3 times to toggle) */}
+      {debugOverlay && (
+        <div className="fixed top-0 left-0 right-0 z-[9999] bg-black/90 p-4 font-mono text-[10px] text-green-400 overflow-auto max-h-[50vh] backdrop-blur-md">
+          <div className="flex justify-between items-center mb-2">
+            <b className="text-white">WebApp InitData Payload</b>
+            <button onClick={() => setDebugOverlay(false)} className="text-red-400 font-bold border border-red-400 px-2 py-0.5 rounded">Close</button>
+          </div>
+          <p><b>href:</b> {window.location.href}</p>
+          <p><b>platform:</b> {(window.Telegram?.WebApp as any)?.platform}</p>
+          <p><b>version:</b> {(window.Telegram?.WebApp as any)?.version}</p>
+          <p><b>start_param:</b> {(window.Telegram?.WebApp?.initDataUnsafe as any)?.start_param}</p>
+          <p><b>initData (length):</b> {window.Telegram?.WebApp?.initData?.length}</p>
+          <p><b>chat_type:</b> {(window.Telegram?.WebApp?.initDataUnsafe as any)?.chat_type}</p>
+          <p><b>isExpanded:</b> {String((window.Telegram?.WebApp as any)?.isExpanded)}</p>
+          <p><b>tg-height:</b> {document.documentElement.style.getPropertyValue('--tg-height')}</p>
+        </div>
+      )}
+
       {!loading && (
         <>
           {!isImmersiveProductPage && (
             <header className="absolute left-0 right-0 z-40 p-6 flex items-center justify-between pointer-events-none" style={{ top: 'calc(var(--tg-safe-top, 0px) + 8px)' }}>
               <h1
                 className="text-xl font-serif tracking-[0.2em] text-app-accent uppercase cursor-pointer pointer-events-auto"
-                onClick={() => { navigate('/'); handleLogoClick(); }}
+                onClick={() => { 
+                  navigate('/'); 
+                  handleLogoClick(); 
+                  if (clickCount >= 3) setDebugOverlay(true); 
+                }}
               >
                 F 63.9
               </h1>

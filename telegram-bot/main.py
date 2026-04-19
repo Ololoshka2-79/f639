@@ -69,6 +69,12 @@ async def cmd_start(message: Message, bot: Bot) -> None:
             [button]
         ]
     )
+    
+    # Dump fully serialized payload to logs
+    kb_dict = kb.model_dump() if hasattr(kb, 'model_dump') else kb.dict()
+    import json
+    log.info("Full keyboard serialized JSON: %s", json.dumps(kb_dict))
+    
     await message.answer(WELCOME_HTML, reply_markup=kb, parse_mode=ParseMode.HTML)
 
 
