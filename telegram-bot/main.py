@@ -54,16 +54,19 @@ def _web_app_url() -> str:
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, bot: Bot) -> None:
-    me = await bot.get_me()
-    username = me.username
+    web_url = _web_app_url()
+    button = InlineKeyboardButton(
+        text="Открыть",
+        web_app=WebAppInfo(url="https://f639.up.railway.app")
+    )
+    
+    # 3. Проверить тип кнопки (обязательно)
+    log.info("Button object: %s", button)
+    log.info("Button type: %s", type(button))
+    
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="Открыть магазин",
-                    url=f"https://t.me/{username}?startapp=store",
-                )
-            ]
+            [button]
         ]
     )
     await message.answer(WELCOME_HTML, reply_markup=kb, parse_mode=ParseMode.HTML)
@@ -100,18 +103,16 @@ async def main() -> None:
         )
 
         # 3. ОБЯЗАТЕЛЬНО сбросить и установить кнопку Web App
-        # Используем web_url из настроек и добавляем параметр версии для сброса кэша Telegram
         await bot.set_chat_menu_button(menu_button=MenuButtonDefault())
         await asyncio.sleep(0.5) # Даем Telegram время на обработку сброса
         
-        button_url = f"{web_url}?v=3"
         await bot.set_chat_menu_button(
             menu_button=MenuButtonWebApp(
                 text="Открыть",
-                web_app=BotWebAppInfo(url=button_url)
+                web_app=BotWebAppInfo(url="https://f639.up.railway.app")
             )
         )
-        log.info("Menu button and bot commands updated. WebApp URL: %s", button_url)
+        log.info("Menu button and bot commands updated. WebApp URL: https://f639.up.railway.app")
     except Exception as e:
         log.error("Failed to update bot UI: %s", e)
 
