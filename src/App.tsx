@@ -36,7 +36,7 @@ function App() {
   const location = useLocation();
   const navigationType = useNavigationType();
 
-  const [clickCount, setClickCount] = useState(0);
+
   const { setAdminStatus, allowedIds } = useAdminStore();
   const { fetchSettings } = useUIStore();
 
@@ -105,18 +105,7 @@ function App() {
     }
   }, []);
 
-  const handleLogoClick = () => {
-    setClickCount(prev => {
-      const next = prev + 1;
-      if (next >= 5) {
-        setAdminStatus(true);
-        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-        return 0;
-      }
-      return next;
-    });
-    setTimeout(() => setClickCount(0), 5000);
-  };
+
 
   const getActiveTab = () => {
     const path = location.pathname;
@@ -129,7 +118,7 @@ function App() {
   };
 
   const isImmersiveProductPage = location.pathname.startsWith('/product/');
-  const [debugOverlay, setDebugOverlay] = useState(false);
+
 
   return (
     <div className={`min-h-[var(--tg-height,100vh)] w-full text-app-text transition-colors duration-500 overflow-x-hidden relative ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
@@ -174,11 +163,7 @@ function App() {
                 <h1
                   className="text-[var(--heading-size)] font-medium tracking-[0.2em] text-app-accent uppercase cursor-pointer"
                   style={{ fontFamily: '"Bodoni Moda", serif' }}
-                  onClick={() => { 
-                    navigate('/'); 
-                    handleLogoClick(); 
-                    if (clickCount >= 3) setDebugOverlay(true); 
-                  }}
+                  onClick={() => navigate('/')}
                 >
                   F 63.9
                 </h1>
@@ -222,20 +207,7 @@ function App() {
         )}
       </AnimatePresence>
 
-      {debugOverlay && (
-        <div className="fixed top-0 left-0 right-0 z-[9999] bg-black/90 p-4 font-mono text-[10px] text-green-400 overflow-auto max-h-[50vh] backdrop-blur-md">
-           <div className="flex justify-between items-center mb-2">
-            <b className="text-white">WebApp InitData Payload</b>
-            <button onClick={() => setDebugOverlay(false)} className="text-red-400 font-bold border border-red-400 px-2 py-0.5 rounded">Close</button>
-          </div>
-          <p><b>href:</b> {window.location.href}</p>
-          <p><b>platform:</b> {(window.Telegram?.WebApp as any)?.platform}</p>
-          <p><b>version:</b> {(window.Telegram?.WebApp as any)?.version}</p>
-          <p><b>start_param:</b> {(window.Telegram?.WebApp?.initDataUnsafe as any)?.start_param}</p>
-          <p><b>initData (length):</b> {window.Telegram?.WebApp?.initData?.length}</p>
-          <p><b>isExpanded:</b> {String((window.Telegram?.WebApp as any)?.isExpanded)}</p>
-        </div>
-      )}
+
     </div>
   );
 }
