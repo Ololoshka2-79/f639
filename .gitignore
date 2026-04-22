@@ -28,3 +28,4 @@ server/data/products.json
 *.njsproj
 *.sln
 *.sw?
+.continue/

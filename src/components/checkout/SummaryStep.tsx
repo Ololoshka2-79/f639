@@ -110,9 +110,8 @@ export const SummaryStep: React.FC<SummaryStepProps> = ({ items, total }) => {
           <div className="flex items-end justify-between">
             <div className="flex flex-col gap-0.5">
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-text/60">Итого к оплате</span>
-              <span className="text-[10px] uppercase tracking-[0.2em] text-app-text">Итого</span>
             </div>
-            <span className="font-serif text-2xl text-app-accent">{formatCurrency(finalTotal)}</span>
+            <span className="font-serif text-[var(--price-large)] font-bold text-app-accent">{formatCurrency(finalTotal)}</span>
           </div>
         </div>
       </div>

@@ -17,6 +17,7 @@ import { analytics } from './lib/analytics';
 import { useAdminStore } from './store/adminStore';
 import { useUIStore } from './store/uiStore';
 import { AdminToolbar } from './components/ui/AdminToolbar';
+import { useThemeStore } from './store/themeStore';
 
 const AnalyticsPage = lazy(() =>
   import('./pages/admin/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage }))
@@ -28,6 +29,8 @@ const AdminProductsPage = lazy(() =>
 function App() {
   const tg = window.Telegram?.WebApp;
   const [loading, setLoading] = useState(true);
+  const { mode } = useThemeStore();
+  const theme = mode === 'auto' ? (window.Telegram?.WebApp?.colorScheme || 'light') : mode;
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -57,6 +60,16 @@ function App() {
 
     analytics.trackAppOpen();
   }, [setAdminStatus, allowedIds]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        (tg as any)?.minimize?.();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [tg]);
 
   useEffect(() => {
     fetchSettings();
@@ -119,7 +132,7 @@ function App() {
   const [debugOverlay, setDebugOverlay] = useState(false);
 
   return (
-    <div className="min-h-[var(--tg-height,100vh)] w-full text-app-text transition-colors duration-500 overflow-x-hidden relative bg-black">
+    <div className={`min-h-[var(--tg-height,100vh)] w-full text-app-text transition-colors duration-500 overflow-x-hidden relative ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
       <ThemeManager />
       <AdminToolbar />
       
@@ -157,9 +170,9 @@ function App() {
             transition={{ duration: 0.5 }}
           >
             {!isImmersiveProductPage && (
-              <header className="absolute left-0 right-0 z-40 p-6 flex items-center justify-between pointer-events-none" style={{ top: 'calc(var(--tg-safe-top, 0px) + 30px)' }}>
+              <header className="relative z-40 px-6 flex items-center justify-between" style={{ paddingTop: 'calc(var(--tg-safe-top, 0px) + 20px)', paddingBottom: '10px' }}>
                 <h1
-                  className="text-4xl tracking-[0.1em] text-app-accent uppercase cursor-pointer pointer-events-auto"
+                  className="text-[var(--heading-size)] font-bold tracking-[0.1em] text-app-accent uppercase cursor-pointer"
                   style={{ fontFamily: '"Bodoni Moda", serif' }}
                   onClick={() => { 
                     navigate('/'); 
@@ -174,7 +187,6 @@ function App() {
 
             <main 
               style={{ 
-                paddingTop: isImmersiveProductPage ? '0' : 'calc(var(--tg-safe-top, 0px) + 95px)',
                 minHeight: '100vh'
               }}
             >

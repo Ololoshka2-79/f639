@@ -10,7 +10,7 @@
   html {
     margin: 0;
     padding: 0;
-    background: #000;
+    background: var(--app-bg);
     height: 100%;
     overflow: hidden;
   }
@@ -68,6 +68,9 @@
     --app-border: rgba(0,0,0,0.12);
     --app-border-strong: rgba(0,0,0,0.22);
     --app-accent: #0A0A0A;
+    --heading-size: 2rem;
+    --price-small: 14px;
+    --price-large: 18px;
   }
 
   .dark {

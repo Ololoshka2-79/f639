@@ -232,7 +232,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
               contentEditable={editMode}
               onBlur={(e) => handleUpdate('price', e.currentTarget.textContent || '')}
               suppressContentEditableWarning
-              className={`text-lg font-semibold leading-none text-app-accent ${
+              className={`text-[var(--price-small)] font-semibold leading-none text-app-accent ${
                 editMode
                   ? 'select-text rounded bg-white/5 px-2 py-0.5 outline outline-1 outline-app-accent/50'
                   : ''

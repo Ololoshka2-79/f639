@@ -54,7 +54,7 @@ export const TelegramRouter: React.FC<{ children: React.ReactNode }> = ({ childr
       }
 
       if (isAppRootPath(window.location.pathname)) {
-        tg.close?.();
+        (tg as any).minimize?.();
         return;
       }
 
