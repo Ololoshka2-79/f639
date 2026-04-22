@@ -18,7 +18,7 @@ export type AnalyticsUserSessionRow = UserSessionAgg & {
 };
 
 export function useAnalytics(periodDays: number = 7) {
-  const { events } = useAnalyticsStore();
+  const { events, uniqueUserIds } = useAnalyticsStore();
 
   return useMemo(() => {
     const now = new Date();
@@ -35,6 +35,9 @@ export function useAnalytics(periodDays: number = 7) {
     // Unique users active in this period
     const users = new Set(recentEvents.map(e => e.userId)).size;
     
+    // Total unique users ever seen by the system
+    const totalUsers = uniqueUserIds.length || users;
+
     // Abandoned carts in selected period
     const cartUsers = new Set(recentEvents.filter(e => e.event === 'add_to_cart').map(e => e.userId));
     const orderUsers = new Set(periodOrders.map(e => e.userId));
@@ -140,6 +143,7 @@ export function useAnalytics(periodDays: number = 7) {
         orders,
         revenue,
         users,
+        totalUsers,
         abandonedCarts
       },
       chartData,
@@ -149,5 +153,5 @@ export function useAnalytics(periodDays: number = 7) {
       recentActivity,
       hasData: allEvents.length > 0
     };
-  }, [events, periodDays]);
+  }, [events, uniqueUserIds, periodDays]);
 }

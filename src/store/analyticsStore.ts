@@ -21,13 +21,17 @@ export interface AnalyticsEvent {
 
 interface AnalyticsState {
   events: AnalyticsEvent[];
+  uniqueUserIds: string[]; // Persistent registry of all known users
   trackEvent: (evt: Partial<AnalyticsEvent> & { event: AnalyticsEventType; userId: string }) => void;
+  resetAnalytics: () => void;
 }
 
 export const useAnalyticsStore = create<AnalyticsState>()(
   persist(
     (set) => ({
       events: [],
+      uniqueUserIds: [],
+      resetAnalytics: () => set({ events: [], uniqueUserIds: [] }),
       trackEvent: (evt) => set((state) => {
         const now = new Date();
         const threshold = subDays(now, 3);
@@ -40,8 +44,14 @@ export const useAnalyticsStore = create<AnalyticsState>()(
         // Keep only events within last 3 days
         const filteredEvents = state.events.filter(e => isAfter(parseISO(e.createdAt), threshold));
         
+        // Update unique user registry
+        const newUniqueUserIds = state.uniqueUserIds.includes(evt.userId) 
+          ? state.uniqueUserIds 
+          : [...state.uniqueUserIds, evt.userId];
+        
         return {
-          events: [...filteredEvents, newEvent]
+          events: [...filteredEvents, newEvent],
+          uniqueUserIds: newUniqueUserIds
         };
       })
     }),

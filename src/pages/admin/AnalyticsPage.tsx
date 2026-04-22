@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BarChart3, TrendingUp, Package, Users, Filter, Activity, ChevronRight } from 'lucide-react';
+import { BarChart3, TrendingUp, Package, Users, Filter, Activity, ChevronRight, Trash2 } from 'lucide-react';
 import { useAdminStore } from '../../store/adminStore';
 import { useAnalytics, type AnalyticsUserSessionRow } from '../../hooks/useAnalytics';
 import { useAnalyticsStore, type AnalyticsEvent } from '../../store/analyticsStore';
@@ -15,40 +15,7 @@ export const AnalyticsPage: React.FC = () => {
   const [period, setPeriod] = useState<number>(7);
   const { kpi, chartData, funnel, topProducts, userSessions, recentActivity, hasData } = useAnalytics(period);
   useEffect(() => {
-    const store = useAnalyticsStore.getState();
-    if (store.events.length < 5) {
-      const types = ['view_product', 'add_to_cart', 'open_checkout', 'select_pvz', 'create_order'] as const;
-      const products = useProductStore.getState().products;
-      const tg = window.Telegram?.WebApp;
-      const me = tg?.initDataUnsafe?.user?.id?.toString() || 'admin';
-      
-      const newEvents: AnalyticsEvent[] = [];
-      const now = Date.now();
-      
-      for(let i=0; i<300; i++) {
-         const daysAgo = Math.random() < 0.2 ? 0 : Math.floor(Math.random() * 90);
-         const time = new Date(now - daysAgo * 24 * 3600 * 1000 - Math.random() * 5000000);
-         
-         const eventType = types[Math.floor(Math.random() * types.length)];
-         const p = products[Math.floor(Math.random() * products.length)];
-         
-         if (!p) continue;
-
-         newEvents.push({
-            id: crypto.randomUUID(),
-            userId: Math.random() > 0.4 ? me : `user_${Math.floor(Math.random()*1000)}`,
-            event: eventType,
-            productId: p.id,
-            amount: eventType === 'create_order' ? p.price : undefined,
-            deliveryType: eventType === 'select_pvz' ? (Math.random() > 0.3 ? 'pickup' : 'courier') : undefined,
-            pvzAddress: eventType === 'select_pvz' ? 'Москва, Покровка 2/1' : undefined,
-            createdAt: time.toISOString()
-         });
-      }
-      
-      useAnalyticsStore.setState({ events: [...store.events, ...newEvents] });
-      // Force un-memoize trigger by set timeout or let zustand do it
-    }
+    // Analytics is now strictly driven by real user events.
   }, []);
 
   if (!isAdmin) {
@@ -73,10 +40,21 @@ export const AnalyticsPage: React.FC = () => {
   return (
     <div className="min-h-screen pb-32 bg-app-bg font-sans text-app-text">
       {/* Header */}
-      <header className="sticky top-0 z-40 mb-8 flex items-center justify-center border-b border-neutral-500/[0.14] bg-app-surface-1/95 px-6 py-6 backdrop-blur-md dark:border-neutral-400/[0.12]">
+      <header className="sticky top-0 z-40 mb-8 flex items-center justify-between border-b border-neutral-500/[0.14] bg-app-surface-1/95 px-6 py-6 backdrop-blur-md dark:border-neutral-400/[0.12]">
         <div className="w-10 flex-shrink-0" aria-hidden />
         <h1 className="flex-1 text-center font-serif text-xl text-app-text">Аналитика</h1>
-        <div className="w-10 flex-shrink-0" aria-hidden />
+        <button 
+          onClick={() => {
+            if(window.confirm('Вы уверены, что хотите сбросить ВСЮ аналитику?')) {
+              useAnalyticsStore.getState().resetAnalytics();
+              window.location.reload();
+            }
+          }}
+          className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-full text-red-400 hover:bg-red-400/10 transition-colors"
+          title="Сбросить аналитику"
+        >
+          <Trash2 size={20} />
+        </button>
       </header>
 
       <div className="p-6 space-y-6">
@@ -114,7 +92,7 @@ export const AnalyticsPage: React.FC = () => {
               {[
                 { label: 'Заказы', value: kpi.orders, icon: <Package size={16} /> },
                 { label: 'Выручка', value: formatMoney(kpi.revenue), icon: <TrendingUp size={16} /> },
-                { label: 'Новые пользователи', value: kpi.users, icon: <Users size={16} /> },
+                { label: 'Активные за период', value: kpi.users, icon: <Users size={16} /> },
                 { label: 'Брошено корзин', value: kpi.abandonedCarts, icon: <Filter size={16} />, warn: true },
               ].map((metric, i) => (
                 <div key={i} className="p-4 rounded-2xl bg-app-surface-1 border border-app-border flex flex-col gap-2 relative overflow-hidden">
@@ -224,11 +202,11 @@ export const AnalyticsPage: React.FC = () => {
             <div className="space-y-4">
               <div className="rounded-2xl border-2 border-app-border-strong bg-app-accent/10 p-6 flex items-center justify-between shadow-sm">
                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-text/60">Всего пользователей</span>
-                    <span className="text-[9px] uppercase tracking-widest text-app-text-muted">(за последние 7 дней)</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-app-text/60">Всего уникальных пользователей</span>
+                    <span className="text-[9px] uppercase tracking-widest text-app-text-muted">(за всё время)</span>
                  </div>
                  <div className="flex flex-col items-end">
-                    <span className="font-serif text-3xl text-app-accent">{kpi.users}</span>
+                    <span className="font-serif text-3xl text-app-accent">{kpi.totalUsers}</span>
                  </div>
               </div>
 
