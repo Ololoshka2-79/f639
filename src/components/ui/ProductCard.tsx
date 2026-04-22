@@ -210,7 +210,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
         )}
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col px-0.5 pt-0">
+      <div className="flex min-h-0 flex-1 flex-col px-0.5 pt-3">
         <div className={`${dividerClass} pb-1`}>
           <h3
             contentEditable={editMode}

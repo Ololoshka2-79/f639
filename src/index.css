@@ -61,15 +61,15 @@
   :root {
     --tg-safe-top: 0px;
     --app-bg: #FFFFFF;
-    --app-surface-1: #F6F6F6;
-    --app-surface-2: #EEEEEE;
-    --app-surface-3: #E4E4E4;
-    --app-surface-hover: #DCDCDC;
-    --app-text: #0A0A0A;
-    --app-text-muted: #3D3D3D;
-    --app-border: rgba(0, 0, 0, 0.12);
-    --app-border-strong: rgba(0, 0, 0, 0.22);
-    --app-accent: #0A0A0A;
+    --app-surface-1: #F8F8F8;
+    --app-surface-2: #F0F0F0;
+    --app-surface-3: #E8E8E8;
+    --app-surface-hover: #E0E0E0;
+    --app-text: #050505;
+    --app-text-muted: #4A4A4A;
+    --app-border: rgba(0, 0, 0, 0.16);
+    --app-border-strong: rgba(0, 0, 0, 0.28);
+    --app-accent: #000000;
     --heading-size: 1.5rem;
     --price-small: 14px;
     --price-large: 18px;

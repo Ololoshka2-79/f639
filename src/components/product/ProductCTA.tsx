@@ -79,7 +79,7 @@ export const ProductCTA: React.FC<ProductCTAProps> = ({ product, selectedSize })
               const val = parseInt(e.currentTarget.textContent?.replace(/\D/g, '') || '0');
               if (val > 0) updateProduct(product.id, { price: val });
             }}
-            className={`font-serif text-lg font-semibold leading-none tracking-tight ${
+            className={`text-[var(--price-large)] font-semibold leading-none ${
               editMode
                 ? 'cursor-text rounded bg-white/10 px-1 outline outline-1 outline-dashed outline-app-accent'
                 : 'text-app-accent'
