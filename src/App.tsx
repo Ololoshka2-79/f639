@@ -172,7 +172,7 @@ function App() {
             {!isImmersiveProductPage && (
               <header className="relative z-40 px-6 flex items-center justify-between" style={{ paddingTop: 'calc(var(--tg-safe-top, 0px) + 20px)', paddingBottom: '10px' }}>
                 <h1
-                  className="text-[var(--heading-size)] font-bold tracking-[0.1em] text-app-accent uppercase cursor-pointer"
+                  className="text-[var(--heading-size)] font-medium tracking-[0.2em] text-app-accent uppercase cursor-pointer"
                   style={{ fontFamily: '"Bodoni Moda", serif' }}
                   onClick={() => { 
                     navigate('/'); 

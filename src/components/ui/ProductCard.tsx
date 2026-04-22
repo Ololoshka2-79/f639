@@ -210,8 +210,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
         )}
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col px-0.5 pt-2">
-        <div className={`${dividerClass} pb-2`}>
+      <div className="flex min-h-0 flex-1 flex-col px-0.5 pt-0">
+        <div className={`${dividerClass} pb-1`}>
           <h3
             contentEditable={editMode}
             onBlur={(e) => handleUpdate('title', e.currentTarget.textContent || '')}
@@ -226,7 +226,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
           </h3>
         </div>
 
-        <div className="mt-auto flex min-h-[40px] flex-row items-center justify-between gap-2 pt-2">
+        <div className="mt-auto flex min-h-[40px] flex-row items-center justify-between gap-2 pt-1">
           <div className="flex min-w-0 flex-shrink flex-col justify-center gap-0.5">
             <span
               contentEditable={editMode}

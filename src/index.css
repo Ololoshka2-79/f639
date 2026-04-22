@@ -1,8 +1,8 @@
-@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+
   /* ── Fullscreen fix ──────────────────────────────────────────────────
      Root cause of the white/black slit from Telegram dialogs:
      safe-area-inset-top, margin-top, or padding-top on html/body/#root
@@ -51,6 +51,7 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -65,10 +66,10 @@
     --app-surface-hover: #DCDCDC;
     --app-text: #0A0A0A;
     --app-text-muted: #3D3D3D;
-    --app-border: rgba(0,0,0,0.12);
-    --app-border-strong: rgba(0,0,0,0.22);
+    --app-border: rgba(0, 0, 0, 0.12);
+    --app-border-strong: rgba(0, 0, 0, 0.22);
     --app-accent: #0A0A0A;
-    --heading-size: 2rem;
+    --heading-size: 1.5rem;
     --price-small: 14px;
     --price-large: 18px;
   }
@@ -81,27 +82,33 @@
     --app-surface-hover: #1F1F1F;
     --app-text: #FAFAFA;
     --app-text-muted: #A8A8A8;
-    --app-border: rgba(255,255,255,0.12);
-    --app-border-strong: rgba(255,255,255,0.22);
+    --app-border: rgba(255, 255, 255, 0.12);
+    --app-border-strong: rgba(255, 255, 255, 0.22);
     --app-accent: #F0F0F0;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: "Playfair Display", serif;
   }
 
   /* Neon Glow Effects */
   .neon-text-white {
     color: #fff;
-    text-shadow: 
+    text-shadow:
       0 0 5px rgba(255, 255, 255, 0.8),
       0 0 10px rgba(255, 255, 255, 0.5),
       0 0 20px rgba(255, 255, 255, 0.3);
   }
 
   .neon-stroke-white {
-    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.8)) 
-            drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.9)) 
+            drop-shadow(0 0 5px rgba(255, 255, 255, 0.6))
+            drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
   }
 }
 
@@ -132,7 +139,7 @@
     background: var(--app-accent);
     color: var(--app-bg);
     border: none;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   }
 
   .app-button-primary:active {
@@ -140,7 +147,7 @@
   }
 
   .dark .app-button-primary {
-    box-shadow: 0 8px 24px rgba(255,255,255,0.03);
+    box-shadow: 0 8px 24px rgba(255, 255, 255, 0.03);
   }
 
   .app-button-outline {
@@ -169,7 +176,7 @@
     border: 1px solid var(--app-border);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease;
   }
-  
+
   .app-card:hover {
     background-color: var(--app-surface-3);
     transform: translateY(-2px);
@@ -191,6 +198,7 @@
     opacity: 0;
     transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
+
   .img-fade.loaded {
     opacity: 1;
   }
@@ -201,6 +209,7 @@
     transform: scale(0);
     opacity: 0.5;
   }
+
   to {
     transform: scale(4);
     opacity: 0;
@@ -246,7 +255,7 @@
 
 [class*="balloon__layout"] {
   background-color: transparent !important;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.3) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
 }
 
 [class*="balloon__tail"] {
@@ -255,5 +264,6 @@
 
 /* Custom Search UI in Map */
 [class*="search__result"] {
-  color: #000 !important; /* Yandex search list results often assume white bg */
+  color: #000 !important;
+  /* Yandex search list results often assume white bg */
 }

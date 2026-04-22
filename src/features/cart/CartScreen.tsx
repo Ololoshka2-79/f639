@@ -75,20 +75,20 @@ export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
 
             <motion.div
               drag="x"
-              dragConstraints={{ left: -96, right: 0 }}
-              dragElastic={0.3}
+              dragConstraints={{ left: -120, right: 0 }}
+              dragElastic={0.15}
               animate={{ x: swipedItemId === item.id ? -96 : 0 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
               onDragEnd={(_, info) => {
-                const threshold = 100;
-                const velocityThreshold = 600;
+                const threshold = 120;
+                const velocityThreshold = 800;
                 
                 if (info.offset.x < -threshold || info.velocity.x < -velocityThreshold) {
                   setSwipedItemId(item.id);
                   haptics.selection();
-                } else if (info.offset.x > 50 || info.velocity.x > 300) {
+                } else if (info.offset.x > 60 || info.velocity.x > 400) {
                   setSwipedItemId(null);
-                } else if (swipedItemId === item.id && info.offset.x < 40) {
+                } else if (swipedItemId === item.id && info.offset.x < 30) {
                   setSwipedItemId(item.id);
                 } else {
                   setSwipedItemId(null);
@@ -107,7 +107,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-serif text-app-text line-clamp-2">{item.product.title}</p>
-                <p className="text-[var(--price-small)] text-app-text-muted mt-1">{formatCurrency(item.product.price)}</p>
+                <p className="text-[var(--price-small)] font-semibold text-app-text mt-1">{formatCurrency(item.product.price)}</p>
                 <div className="flex items-center gap-3 mt-3">
                   <button
                     type="button"
@@ -160,7 +160,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
         <div className="pointer-events-auto max-w-md mx-auto space-y-4">
           <div className="flex justify-between items-baseline px-1">
             <span className="text-[10px] uppercase tracking-widest text-app-text-muted">Итого</span>
-            <span className="text-2xl font-serif text-app-accent">{formatCurrency(total)}</span>
+            <span className="text-[var(--price-large)] font-bold text-app-accent">{formatCurrency(total)}</span>
           </div>
           <Button variant="gold" fullWidth className="h-14" onClick={onCheckout}>
             Оформить заказ
