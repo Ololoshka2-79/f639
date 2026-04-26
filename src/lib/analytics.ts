@@ -1,4 +1,4 @@
-import type { Product, CartItem } from '../types';
+import type { Product } from '../types';
 import { useAnalyticsStore } from '../store/analyticsStore';
 import type { AnalyticsEventType } from '../store/analyticsStore';
 
@@ -33,7 +33,7 @@ export const analytics = {
   trackAddToCart: (product: Product, quantity: number) => {
     trackEvent({ event: 'add_to_cart', productId: product.id, amount: product.price * quantity });
   },
-  trackBeginCheckout: (items: CartItem[], total: number) => {
+  trackBeginCheckout: (items: any[], total: number) => {
     void items;
     trackEvent({ event: 'open_checkout', amount: total });
   },
@@ -41,7 +41,7 @@ export const analytics = {
     void pvzId;
     trackEvent({ event: 'select_pvz', deliveryType: 'pickup', pvzAddress: address });
   },
-  trackPurchase: (orderId: string, total: number, items: CartItem[]) => {
+  trackPurchase: (orderId: string, total: number, items: any[]) => {
     void items;
     trackEvent({ event: 'create_order', orderId, amount: total });
   }

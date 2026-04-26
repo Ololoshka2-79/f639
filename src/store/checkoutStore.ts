@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { CartItem, Product } from '../types';
 
@@ -64,7 +64,6 @@ export const useCheckoutStore = create<CheckoutState>()(
           checkoutBuyNowItem: {
             id: `buy-now-${product.id}-${Date.now()}`,
             productId: product.id,
-            product,
             size,
             quantity: 1,
           },

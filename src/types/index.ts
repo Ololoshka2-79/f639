@@ -59,7 +59,12 @@ export type OrderStatus =
 export interface CartItem {
   id: string;
   productId: string;
-  product: Product;
   size?: string;
   quantity: number;
 }
+
+export type CheckoutItem = Product & {
+  cartItemId: string;
+  quantity: number;
+  size?: string;
+};

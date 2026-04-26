@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckoutHeader } from '../components/checkout/CheckoutHeader';
@@ -8,11 +8,12 @@ import { SummaryStep } from '../components/checkout/SummaryStep';
 import { OrderSuccess } from '../components/payment/OrderSuccess';
 import { useCheckoutStore, CHECKOUT_TOTAL_STEPS } from '../store/checkoutStore';
 import { useCartStore } from '../store/cartStore';
+import { useProductStore } from '../store/productStore';
 import { useOrderStore } from '../store/orderStore';
 import { useHaptics } from '../hooks/useHaptics';
 import { api } from '../lib/api/endpoints';
 import { analytics } from '../lib/analytics';
-
+import type { CheckoutItem } from '../types';
 
 const ADDR_MIN = 8;
 
@@ -30,12 +31,29 @@ export const CheckoutPage: React.FC = () => {
   const { currentStep, setStep, contactInfo, deliveryData, resetCheckout, checkoutBuyNowItem, clearBuyNowItem } =
     useCheckoutStore();
   const { items, clearCart } = useCartStore();
-  const checkoutItems = checkoutBuyNowItem ? [checkoutBuyNowItem] : items;
-  // Вычисляем total на лету из items, чтобы исключить рассинхронизацию с persisted-полем total
-  const computedItemsTotal = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
-  const checkoutTotal = checkoutBuyNowItem
-    ? checkoutBuyNowItem.product.price * checkoutBuyNowItem.quantity
-    : computedItemsTotal;
+  const products = useProductStore((state) => state.products);
+  
+  const cartItemsBase = checkoutBuyNowItem ? [checkoutBuyNowItem] : items;
+
+  const checkoutItems = useMemo(() => {
+    return cartItemsBase.reduce<CheckoutItem[]>((acc, item) => {
+      const product = products.find(p => p.id === item.productId);
+      if (product) {
+        acc.push({
+          ...product,
+          quantity: item.quantity,
+          cartItemId: item.id,
+          size: item.size
+        } as CheckoutItem);
+      }
+      return acc;
+    }, []);
+  }, [cartItemsBase, products]);
+
+  const checkoutTotal = useMemo(() => {
+    return checkoutItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  }, [checkoutItems]);
+
   const grandTotal = checkoutTotal + shippingForTotal(checkoutTotal);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,7 +65,7 @@ export const CheckoutPage: React.FC = () => {
 
   useEffect(() => {
     if (!hasTrackedCheckout.current && checkoutItems.length > 0) {
-      analytics.trackBeginCheckout(checkoutItems, checkoutTotal);
+      analytics.trackBeginCheckout(checkoutItems as any, checkoutTotal); // Note: analytics type might need adjust if it wants CartItem
       hasTrackedCheckout.current = true;
     }
   }, [checkoutItems, checkoutTotal]);
@@ -108,9 +126,9 @@ export const CheckoutPage: React.FC = () => {
     try {
       const orderData = {
         items: checkoutItems.map((item) => ({
-          productId: item.productId,
-          title: item.product.title,
-          price: item.product.price,
+          productId: item.id,
+          title: item.title,
+          price: item.price,
           quantity: item.quantity,
           size: item.size,
         })),
@@ -133,14 +151,14 @@ export const CheckoutPage: React.FC = () => {
         status: 'awaiting_payment',
         date: new Date().toISOString(),
         total: grandTotal,
-        items: checkoutItems,
+        items: checkoutItems as any,
         deliveryAddress: deliveryData.address,
       });
 
       // ✅ Сохраняем адрес в историю адресов (Bug fix)
       addSavedAddress(deliveryData.address);
 
-      analytics.trackPurchase(orderId, grandTotal, checkoutItems);
+      analytics.trackPurchase(orderId, grandTotal, checkoutItems as any);
       if (checkoutBuyNowItem) {
         clearBuyNowItem();
       } else {

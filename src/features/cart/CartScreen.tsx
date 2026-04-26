@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, ShoppingBag } from 'lucide-react';
 import { useCartStore } from '../../store/cartStore';
+import { useProductStore } from '../../store/productStore';
 import { formatCurrency } from '../../lib/utils';
 import { Button } from '../../components/ui/Button';
 import { useHaptics } from '../../hooks/useHaptics';
-import type { CartItem } from '../../types';
+import type { CartItem, Product } from '../../types';
 
 interface CartScreenProps {
   onCheckout: () => void;
@@ -14,10 +15,25 @@ interface CartScreenProps {
 
 export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
   const navigate = useNavigate();
-  const { items, total, removeItem, updateQuantity, addItem } = useCartStore();
+  const { items, removeItem, updateQuantity, addItem } = useCartStore();
+  const products = useProductStore((state) => state.products);
   const haptics = useHaptics();
   const [swipedItemId, setSwipedItemId] = useState<string | null>(null);
-  const [undoItem, setUndoItem] = useState<CartItem | null>(null);
+  const [undoItem, setUndoItem] = useState<{ cartItem: CartItem; product: Product } | null>(null);
+
+  const cartItemsWithProducts = useMemo(() => {
+    return items
+      .map(item => {
+        const product = products.find(p => p.id === item.productId);
+        if (!product) return null;
+        return { item, product };
+      })
+      .filter((x): x is { item: CartItem; product: Product } => x !== null);
+  }, [items, products]);
+
+  const total = useMemo(() => {
+    return cartItemsWithProducts.reduce((sum, { item, product }) => sum + product.price * item.quantity, 0);
+  }, [cartItemsWithProducts]);
 
   useEffect(() => {
     if (!undoItem) return;
@@ -25,23 +41,23 @@ export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
     return () => window.clearTimeout(t);
   }, [undoItem]);
 
-  const handleDelete = (item: CartItem) => {
+  const handleDelete = (item: CartItem, product: Product) => {
     removeItem(item.id);
-    setUndoItem(item);
+    setUndoItem({ cartItem: item, product });
     setSwipedItemId(null);
     haptics.impactLight();
   };
 
   const handleUndo = () => {
     if (!undoItem) return;
-    for (let i = 0; i < undoItem.quantity; i += 1) {
-      addItem(undoItem.product, undoItem.size);
+    for (let i = 0; i < undoItem.cartItem.quantity; i += 1) {
+      addItem(undoItem.product, undoItem.cartItem.size);
     }
     setUndoItem(null);
     haptics.success();
   };
 
-  if (items.length === 0) {
+  if (cartItemsWithProducts.length === 0) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center px-8 text-center pb-32">
         <ShoppingBag className="w-16 h-16 text-app-text-muted/40 mb-6" strokeWidth={1} />
@@ -63,12 +79,12 @@ export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
       <h2 className="text-2xl font-serif text-app-text mb-8">Корзина</h2>
 
       <ul className="space-y-4 mb-10">
-        {items.map((item) => (
+        {cartItemsWithProducts.map(({ item, product }) => (
           <li key={item.id} className="relative overflow-hidden rounded-2xl border border-app-border bg-app-surface-1">
             <button
               type="button"
               className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-red-500 text-white"
-              onClick={() => handleDelete(item)}
+              onClick={() => handleDelete(item, product)}
             >
               <Trash2 size={16} />
             </button>
@@ -100,14 +116,14 @@ export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
                 className="flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl bg-[#f5f5f5] dark:bg-[#141414]"
                 onClick={() => {
                   haptics.impactLight();
-                  navigate(`/product/${item.product.id}-${item.product.slug}`);
+                  navigate(`/product/${product.id}-${product.slug}`);
                 }}
               >
-                <img src={item.product.image} alt="" className="h-full w-full object-contain object-center" />
+                <img src={product.image} alt="" className="h-full w-full object-contain object-center" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-serif text-app-text line-clamp-2">{item.product.title}</p>
-                <p className="text-[var(--price-small)] font-semibold text-app-text mt-1">{formatCurrency(item.product.price)}</p>
+                <p className="text-sm font-serif text-app-text line-clamp-2">{product.title}</p>
+                <p className="text-[var(--price-small)] font-semibold text-app-text mt-1">{formatCurrency(product.price)}</p>
                 <div className="flex items-center gap-3 mt-3">
                   <button
                     type="button"
@@ -135,7 +151,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
               <button
                 type="button"
                 className="p-2 self-start text-app-text-muted hover:text-red-500 transition-colors"
-                onClick={() => handleDelete(item)}
+                onClick={() => handleDelete(item, product)}
                 aria-label="Удалить"
               >
                 <Trash2 size={18} />

@@ -40,10 +40,11 @@ export const ProductPage: React.FC = () => {
   // Extract slug from id-slug format
   const slug = idSlug?.split('-').slice(1).join('-');
 
-  const { data: remoteProduct, isLoading, isError } = useQuery({
+  const { data: remoteProduct, isLoading } = useQuery({
     queryKey: queryKeys.product(slug || ''),
     queryFn: () => api.products.get(slug || ''),
     enabled: !!slug,
+    retry: 0,
   });
 
   const product = storeProduct ?? remoteProduct;
@@ -96,26 +97,25 @@ export const ProductPage: React.FC = () => {
     }
   }, [product?.id]);
 
-  if (isLoading && !product) {
-    return (
-      <div className="pb-32">
-        <Skeleton className="w-full aspect-[4/5]" />
-        <div className="px-6 py-8 space-y-4">
-          <Skeleton className="h-4 w-1/4" />
-          <Skeleton className="h-8 w-2/3" />
-          <Skeleton className="h-6 w-1/3" />
-          <Skeleton className="h-32 w-full mt-8" />
+  if (!product) {
+    if (isLoading) {
+      return (
+        <div className="pb-32">
+          <Skeleton className="w-full aspect-[4/5]" />
+          <div className="px-6 py-8 space-y-4">
+            <Skeleton className="h-4 w-1/4" />
+            <Skeleton className="h-8 w-2/3" />
+            <Skeleton className="h-6 w-1/3" />
+            <Skeleton className="h-32 w-full mt-8" />
+          </div>
         </div>
-      </div>
-    );
-  }
-
-  if ((isError && !product) || !product) {
+      );
+    }
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] px-12 text-center">
         <h2 className="text-xl font-serif text-app-text mb-2">Украшение не найдено</h2>
-        <button onClick={() => navigate('/catalog')} className="text-app-accent uppercase text-[10px] tracking-widest font-bold mt-4">
-          Вернуться в каталог
+        <button onClick={() => window.history.length > 2 ? navigate(-1) : navigate('/')} className="text-app-accent uppercase text-[10px] tracking-widest font-bold mt-4">
+          Вернуться назад
         </button>
       </div>
     );

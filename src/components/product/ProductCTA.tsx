@@ -44,7 +44,7 @@ export const ProductCTA: React.FC<ProductCTAProps> = ({ product, selectedSize })
   const handleBuyNow = () => {
     setBuyNowItem(product, selectedSize);
     analytics.trackBeginCheckout(
-      [{ id: `buy-now-${product.id}`, productId: product.id, product, quantity: 1, size: selectedSize }],
+      [{ id: `buy-now-${product.id}`, productId: product.id, quantity: 1, size: selectedSize }],
       product.price,
     );
     haptics.impactMedium();

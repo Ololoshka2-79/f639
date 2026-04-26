@@ -1,18 +1,16 @@
 import React from 'react';
 import { useCheckoutStore } from '../../store/checkoutStore';
 import { formatCurrency } from '../../lib/utils';
-import type { CartItem } from '../../types';
+import type { CheckoutItem } from '../../types';
 import { ShoppingBag, MapPin, Phone, ShieldCheck, Copy, Check } from 'lucide-react';
 import { useHaptics } from '../../hooks/useHaptics';
 
 interface SummaryStepProps {
-  items: CartItem[];
+  items: CheckoutItem[];
   total: number;
 }
 
-export const SummaryStep: React.FC<SummaryStepProps> = ({ items, total: _unused }) => {
-  // Вычисляем total из items, чтобы исключить рассинхронизацию с persisted-полем стора
-  const total = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+export const SummaryStep: React.FC<SummaryStepProps> = ({ items, total }) => {
   const { contactInfo, deliveryData } = useCheckoutStore();
   const haptics = useHaptics();
   const [copied, setCopied] = React.useState(false);
@@ -89,19 +87,19 @@ export const SummaryStep: React.FC<SummaryStepProps> = ({ items, total: _unused 
           </div>
           <div className="space-y-3">
             {items.map((item) => (
-              <div key={item.id} className="flex gap-4 rounded-xl border border-app-border-strong bg-app-surface-2 p-3">
+              <div key={item.cartItemId} className="flex gap-4 rounded-xl border border-app-border-strong bg-app-surface-2 p-3">
                 <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#f5f5f5] dark:bg-[#141414]">
-                  <img src={item.product.image} alt={item.product.title} className="h-full w-full object-cover object-center" />
+                  <img src={item.image} alt={item.title} className="h-full w-full object-cover object-center" />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col justify-center">
-                  <h5 className="line-clamp-1 text-[11px] font-medium text-app-text">{item.product.title}</h5>
+                  <h5 className="line-clamp-1 text-[11px] font-medium text-app-text">{item.title}</h5>
                   <div className="mt-1 flex items-center gap-3">
                     {item.size ? <span className="text-[9px] uppercase text-app-text-muted">Размер: {item.size}</span> : null}
                     <span className="text-[9px] uppercase text-app-text-muted">Кол-во: {item.quantity}</span>
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center text-[11px] font-bold text-app-accent">
-                  {formatCurrency(item.product.price * item.quantity)}
+                  {formatCurrency(item.price * item.quantity)}
                 </div>
               </div>
             ))}

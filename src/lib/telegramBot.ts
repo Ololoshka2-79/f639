@@ -1,5 +1,4 @@
-﻿import axios from 'axios';
-import type { CartItem } from '../types';
+import axios from 'axios';
 import type { ContactInfo, DeliveryData } from '../store/checkoutStore';
 import { getAdminTelegramUserIds } from './adminTelegramConfig';
 
@@ -60,7 +59,7 @@ function deliveryDetail(data: DeliveryData): string {
 
 export function formatPaymentClaimNotification(params: {
   orderId: string;
-  items: CartItem[];
+  items: { title: string; price: number; quantity: number }[];
   orderTotal: number;
   contactInfo: ContactInfo;
   deliveryData: DeliveryData;
@@ -71,9 +70,9 @@ export function formatPaymentClaimNotification(params: {
   const shortId = orderId.split('-')[0].toUpperCase();
 
   const lines = items.map((i) => {
-    const unit = formatMoney(i.product.price);
-    const line = formatMoney(i.product.price * i.quantity);
-    return `• ${esc(i.product.title)}\n  ${unit} × ${i.quantity} → <b>${line}</b>`;
+    const unit = formatMoney(i.price);
+    const line = formatMoney(i.price * i.quantity);
+    return `• ${esc(i.title)}\n  ${unit} × ${i.quantity} → <b>${line}</b>`;
   });
 
   const name = contactInfo.name.trim() || '—';
@@ -99,7 +98,7 @@ export function formatPaymentClaimNotification(params: {
 
 export function formatLeadOrderNotification(params: {
   orderId: string;
-  items: CartItem[];
+  items: { title: string; price: number; quantity: number }[];
   orderTotal: number;
   contactInfo: ContactInfo;
   deliveryData: DeliveryData;
@@ -109,10 +108,10 @@ export function formatLeadOrderNotification(params: {
   const shortId = orderId.split('-')[0].toUpperCase();
 
   const itemBlocks = items.map((i, idx) => {
-    const unit = i.product.price;
+    const unit = i.price;
     const line = unit * i.quantity;
     return (
-      `<b>${idx + 1}.</b> ${esc(i.product.title)}\n` +
+      `<b>${idx + 1}.</b> ${esc(i.title)}\n` +
       `   <i>Кол-во:</i> ${i.quantity}\n` +
       `   <i>Цена за ед.:</i> ${formatMoney(unit)}\n` +
       `   <i>Сумма:</i> <b>${formatMoney(line)}</b>`
