@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, ShoppingBag } from 'lucide-react';
+import { useCheckoutStore } from '../../store/checkoutStore';
 import { useCartStore } from '../../store/cartStore';
 import { useProductStore } from '../../store/productStore';
 import { formatCurrency } from '../../lib/utils';
@@ -16,6 +17,7 @@ interface CartScreenProps {
 export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
   const navigate = useNavigate();
   const { items, removeItem, updateQuantity, addItem } = useCartStore();
+  const clearBuyNowItem = useCheckoutStore(s => s.clearBuyNowItem);
   const products = useProductStore((state) => state.products);
   const haptics = useHaptics();
   const [swipedItemId, setSwipedItemId] = useState<string | null>(null);
@@ -34,6 +36,10 @@ export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
   const total = useMemo(() => {
     return cartItemsWithProducts.reduce((sum, { item, product }) => sum + product.price * item.quantity, 0);
   }, [cartItemsWithProducts]);
+
+  useEffect(() => {
+    clearBuyNowItem();
+  }, [clearBuyNowItem]);
 
   useEffect(() => {
     if (!undoItem) return;
@@ -57,8 +63,6 @@ export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
     haptics.success();
   };
 
-  const shippingCost = total > 50000 ? 0 : 500;
-  const grandTotal = total + shippingCost;
 
   if (cartItemsWithProducts.length === 0) {
     return (
@@ -178,19 +182,9 @@ export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
       <div className="fixed bottom-0 left-0 right-0 p-6 pb-28 bg-gradient-to-t from-app-bg via-app-bg to-transparent pointer-events-none z-50">
         <div className="pointer-events-auto max-w-md mx-auto space-y-4">
           <div className="space-y-1.5 px-1">
-            <div className="flex justify-between items-baseline">
-              <span className="text-[10px] uppercase tracking-widest text-app-text-muted">Товары</span>
-              <span className="text-sm font-medium text-app-text">{formatCurrency(total)}</span>
-            </div>
-            <div className="flex justify-between items-baseline">
-              <span className="text-[10px] uppercase tracking-widest text-app-text-muted">Доставка (Яндекс ПВЗ)</span>
-              <span className="text-sm font-medium text-app-text">
-                {shippingCost > 0 ? formatCurrency(shippingCost) : 'Бесплатно'}
-              </span>
-            </div>
             <div className="flex justify-between items-baseline pt-2">
               <span className="text-[10px] uppercase tracking-widest text-app-text-muted">Итого</span>
-              <span className="text-[var(--price-large)] font-bold text-app-accent">{formatCurrency(grandTotal)}</span>
+              <span className="text-[var(--price-large)] font-bold text-app-accent">{formatCurrency(total)}</span>
             </div>
           </div>
           <Button variant="gold" fullWidth className="h-14" onClick={onCheckout}>

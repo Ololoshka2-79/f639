@@ -17,9 +17,6 @@ import type { CheckoutItem } from '../types';
 
 const ADDR_MIN = 8;
 
-function shippingForTotal(total: number) {
-  return total > 50000 ? 0 : 500;
-}
 
 function phoneDigitsCount(phone: string): number {
   return phone.replace(/\D/g, '').length;
@@ -54,7 +51,6 @@ export const CheckoutPage: React.FC = () => {
     return checkoutItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }, [checkoutItems]);
 
-  const grandTotal = checkoutTotal + shippingForTotal(checkoutTotal);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
@@ -132,7 +128,7 @@ export const CheckoutPage: React.FC = () => {
           quantity: item.quantity,
           size: item.size,
         })),
-        total: grandTotal,
+        total: checkoutTotal,
         contactInfo: {
           name: contactInfo.name,
           phone: contactInfo.phone,
@@ -150,7 +146,7 @@ export const CheckoutPage: React.FC = () => {
         id: orderId,
         status: 'awaiting_payment',
         date: new Date().toISOString(),
-        total: grandTotal,
+        total: checkoutTotal,
         items: checkoutItems as any,
         deliveryAddress: deliveryData.address,
       });
@@ -158,7 +154,7 @@ export const CheckoutPage: React.FC = () => {
       // ✅ Сохраняем адрес в историю адресов (Bug fix)
       addSavedAddress(deliveryData.address);
 
-      analytics.trackPurchase(orderId, grandTotal, checkoutItems as any);
+      analytics.trackPurchase(orderId, checkoutTotal, checkoutItems as any);
       if (checkoutBuyNowItem) {
         clearBuyNowItem();
       } else {
