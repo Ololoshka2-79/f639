@@ -51,7 +51,6 @@ function App() {
   const favoritesSyncWithCatalog = useFavoritesStore((s) => s.syncWithCatalog);
 
   useEffect(() => {
-    if (products.length === 0) return;
     const validIds = new Set(products.map((p) => p.id));
     cartSyncWithCatalog(validIds);
     favoritesSyncWithCatalog(validIds);

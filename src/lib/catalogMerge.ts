@@ -1,15 +1,9 @@
 import type { Product } from '../types';
 
-/** Remote list merged with persisted local store; local wins by id (admin edits, offline adds). */
+/** Remote list is the source of truth when available. Local is fallback for offline. */
 export function mergeCatalogLists(remote: Product[] | undefined, local: Product[]): Product[] {
-  const map = new Map<string, Product>();
-  if (remote?.length) {
-    for (const p of remote) {
-      map.set(p.id, p);
-    }
+  if (remote !== undefined) {
+    return remote;
   }
-  for (const p of local) {
-    map.set(p.id, p);
-  }
-  return Array.from(map.values());
+  return local;
 }

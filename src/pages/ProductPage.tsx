@@ -26,9 +26,10 @@ export const ProductPage: React.FC = () => {
   const [isShareSheetOpen, setIsShareSheetOpen] = useState(false);
   const { toggleFavorite, isFavorite } = useFavoritesStore();
   const { editMode } = useAdminStore();
+  const idPart = idSlug?.split('-')[0] ?? '';
+  const slug = idSlug?.split('-').slice(1).join('-') ?? '';
+
   const storeProduct = useProductStore((s) => {
-    const slug = idSlug?.split('-').slice(1).join('-') ?? '';
-    const idPart = idSlug?.split('-')[0] ?? '';
     const bySlug = slug && s.products.find((p) => p.slug === slug);
     if (bySlug) return bySlug;
     return s.products.find((p) => p.id === idPart);
@@ -37,17 +38,15 @@ export const ProductPage: React.FC = () => {
   const { customBadgeLabels } = useUIStore();
   const [selectedSize, setSelectedSize] = useState<string | undefined>();
 
-  // Extract slug from id-slug format
-  const slug = idSlug?.split('-').slice(1).join('-');
-
   const { data: remoteProduct, isLoading } = useQuery({
-    queryKey: queryKeys.product(slug || ''),
-    queryFn: () => api.products.get(slug || ''),
-    enabled: !!slug,
+    queryKey: queryKeys.product(idPart),
+    queryFn: () => api.products.get(idPart),
+    enabled: !!idPart,
     retry: 0,
   });
 
-  const product = storeProduct ?? remoteProduct;
+  // Prefer remote product to ensure synced state (edits).
+  const product = remoteProduct ?? storeProduct;
 
   // Metadata for sharing using deep links
   const sharePayload = product ? `product_${product.id}` : 'store';

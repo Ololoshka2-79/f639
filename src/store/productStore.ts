@@ -90,7 +90,7 @@ export const useProductStore = create<ProductStore>()(
       }),
     }),
     {
-      name: 'f639-products-v5',
+      name: 'f639-products-v6',
       // Migrate old data: ensure images array exists and gallery is always an array
       merge: (persisted: unknown, current) => {
         const p = persisted as Partial<typeof current>;
