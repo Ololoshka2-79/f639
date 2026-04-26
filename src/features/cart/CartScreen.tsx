@@ -57,6 +57,9 @@ export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
     haptics.success();
   };
 
+  const shippingCost = total > 50000 ? 0 : 500;
+  const grandTotal = total + shippingCost;
+
   if (cartItemsWithProducts.length === 0) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center px-8 text-center pb-32">
@@ -174,9 +177,21 @@ export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
 
       <div className="fixed bottom-0 left-0 right-0 p-6 pb-28 bg-gradient-to-t from-app-bg via-app-bg to-transparent pointer-events-none z-50">
         <div className="pointer-events-auto max-w-md mx-auto space-y-4">
-          <div className="flex justify-between items-baseline px-1">
-            <span className="text-[10px] uppercase tracking-widest text-app-text-muted">Итого</span>
-            <span className="text-[var(--price-large)] font-bold text-app-accent">{formatCurrency(total)}</span>
+          <div className="space-y-1.5 px-1">
+            <div className="flex justify-between items-baseline">
+              <span className="text-[10px] uppercase tracking-widest text-app-text-muted">Товары</span>
+              <span className="text-sm font-medium text-app-text">{formatCurrency(total)}</span>
+            </div>
+            <div className="flex justify-between items-baseline">
+              <span className="text-[10px] uppercase tracking-widest text-app-text-muted">Доставка (Яндекс ПВЗ)</span>
+              <span className="text-sm font-medium text-app-text">
+                {shippingCost > 0 ? formatCurrency(shippingCost) : 'Бесплатно'}
+              </span>
+            </div>
+            <div className="flex justify-between items-baseline pt-2">
+              <span className="text-[10px] uppercase tracking-widest text-app-text-muted">Итого</span>
+              <span className="text-[var(--price-large)] font-bold text-app-accent">{formatCurrency(grandTotal)}</span>
+            </div>
           </div>
           <Button variant="gold" fullWidth className="h-14" onClick={onCheckout}>
             Оформить заказ
