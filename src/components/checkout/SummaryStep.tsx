@@ -10,7 +10,9 @@ interface SummaryStepProps {
   total: number;
 }
 
-export const SummaryStep: React.FC<SummaryStepProps> = ({ items, total }) => {
+export const SummaryStep: React.FC<SummaryStepProps> = ({ items, total: _unused }) => {
+  // Вычисляем total из items, чтобы исключить рассинхронизацию с persisted-полем стора
+  const total = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
   const { contactInfo, deliveryData } = useCheckoutStore();
   const haptics = useHaptics();
   const [copied, setCopied] = React.useState(false);

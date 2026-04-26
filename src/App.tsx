@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, useNavigationType } from 'react-router-dom';
 import { syncRouteStack } from './lib/appRouteStack';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -94,7 +94,13 @@ function App() {
   }, [fetchSettings]);
 
   // Handle Telegram start params (Bug 3: product_ prefix handled)
+  // Используем ref, чтобы обработать start_param только один раз при монтировании
+  const startParamHandledRef = useRef(false);
+
   useEffect(() => {
+    if (startParamHandledRef.current) return;
+    startParamHandledRef.current = true;
+
     const tg = window.Telegram?.WebApp;
     const startParam = (tg?.initDataUnsafe as any)?.start_param;
 
@@ -110,7 +116,8 @@ function App() {
         return;
       }
     }
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Sync Safe Areas
   useEffect(() => {

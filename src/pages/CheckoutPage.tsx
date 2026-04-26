@@ -29,9 +29,13 @@ export const CheckoutPage: React.FC = () => {
   const haptics = useHaptics();
   const { currentStep, setStep, contactInfo, deliveryData, resetCheckout, checkoutBuyNowItem, clearBuyNowItem } =
     useCheckoutStore();
-  const { items, total, clearCart } = useCartStore();
+  const { items, clearCart } = useCartStore();
   const checkoutItems = checkoutBuyNowItem ? [checkoutBuyNowItem] : items;
-  const checkoutTotal = checkoutBuyNowItem ? checkoutBuyNowItem.product.price * checkoutBuyNowItem.quantity : total;
+  // Вычисляем total на лету из items, чтобы исключить рассинхронизацию с persisted-полем total
+  const computedItemsTotal = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+  const checkoutTotal = checkoutBuyNowItem
+    ? checkoutBuyNowItem.product.price * checkoutBuyNowItem.quantity
+    : computedItemsTotal;
   const grandTotal = checkoutTotal + shippingForTotal(checkoutTotal);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -205,11 +209,10 @@ export const CheckoutPage: React.FC = () => {
               type="button"
               onClick={handleNext}
               disabled={!isStepValid || isSubmitting}
-              className={`flex min-h-[52px] w-full items-center justify-center rounded-[10px] px-4 text-center text-[11px] font-semibold uppercase tracking-widest transition-all duration-200 ease-out ${
-                isStepValid && !isSubmitting
+              className={`flex min-h-[52px] w-full items-center justify-center rounded-[10px] px-4 text-center text-[11px] font-semibold uppercase tracking-widest transition-all duration-200 ease-out ${isStepValid && !isSubmitting
                   ? 'app-button-primary active:scale-[0.98]'
                   : 'cursor-not-allowed border border-app-border/80 bg-white/5 text-app-text-muted'
-              }`}
+                }`}
             >
               Далее
             </button>
@@ -218,13 +221,12 @@ export const CheckoutPage: React.FC = () => {
               type="button"
               onClick={() => void handleSubmitOrder()}
               disabled={isSubmitting}
-              className={`flex min-h-[52px] w-full flex-col items-center justify-center gap-1 rounded-[10px] px-4 py-3 text-center transition-all duration-200 ease-out ${
-                allStepsValid && !isSubmitting
+              className={`flex min-h-[52px] w-full flex-col items-center justify-center gap-1 rounded-[10px] px-4 py-3 text-center transition-all duration-200 ease-out ${allStepsValid && !isSubmitting
                   ? 'app-button-primary active:scale-[0.98]'
                   : !isSubmitting
                     ? 'cursor-pointer border border-app-border/80 bg-white/5 text-app-text-muted hover:bg-white/[0.07]'
                     : 'cursor-wait border border-app-border/80 bg-white/5 text-app-text-muted'
-              }`}
+                }`}
             >
               {isSubmitting ? (
                 <span className="animate-pulse text-[11px] font-semibold uppercase tracking-widest">Отправка…</span>
