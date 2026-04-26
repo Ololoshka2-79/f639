@@ -9,6 +9,16 @@ interface CartStore {
   removeItem: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
+  /** Удаляет из корзины товары, которых нет в актуальном каталоге */
+  syncWithCatalog: (validProductIds: Set<string>) => void;
+}
+
+/** Вспомогательная функция для пересчёта total и возврата нового состояния */
+function recalc(items: CartItem[]): Pick<CartStore, 'items' | 'total'> {
+  return {
+    items,
+    total: items.reduce((acc, i) => acc + i.product.price * i.quantity, 0),
+  };
 }
 
 export const useCartStore = create<CartStore>()(
@@ -25,18 +35,31 @@ export const useCartStore = create<CartStore>()(
         } else {
           newItems = [...items, { id: Math.random().toString(36).substr(2, 9), productId: product.id, product, size, quantity: 1 }];
         }
-        set({ items: newItems, total: newItems.reduce((acc, i) => acc + i.product.price * i.quantity, 0) });
+        set(recalc(newItems));
       },
       removeItem: (itemId) => {
         const newItems = get().items.filter(i => i.id !== itemId);
-        set({ items: newItems, total: newItems.reduce((acc, i) => acc + i.product.price * i.quantity, 0) });
+        set(recalc(newItems));
       },
       updateQuantity: (itemId, quantity) => {
         const newItems = get().items.map(i => i.id === itemId ? { ...i, quantity } : i);
-        set({ items: newItems, total: newItems.reduce((acc, i) => acc + i.product.price * i.quantity, 0) });
+        set(recalc(newItems));
       },
       clearCart: () => set({ items: [], total: 0 }),
+      syncWithCatalog: (validProductIds) => {
+        const current = get().items;
+        const filtered = current.filter(item => validProductIds.has(item.productId));
+        if (filtered.length !== current.length) {
+          set(recalc(filtered));
+        }
+      },
     }),
-    { name: 'f639-cart-storage' }
+    {
+      name: 'f639-cart-storage',
+      partialize: (state) => ({
+        items: state.items,
+        total: state.items.reduce((acc, i) => acc + i.product.price * i.quantity, 0),
+      }),
+    }
   )
 );

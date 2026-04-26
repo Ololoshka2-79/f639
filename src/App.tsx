@@ -14,6 +14,12 @@ import { OrdersPage } from './pages/OrdersPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { RequireCart } from './components/routing/RequireCart';
 import { analytics } from './lib/analytics';
+
+
+
+import { useCartStore } from './store/cartStore';
+import { useFavoritesStore } from './store/favoritesStore';
+import { useProductStore } from './store/productStore';
 import { useAdminStore } from './store/adminStore';
 import { useUIStore } from './store/uiStore';
 import { AdminToolbar } from './components/ui/AdminToolbar';
@@ -31,14 +37,26 @@ function App() {
   const [loading, setLoading] = useState(true);
   const { mode } = useThemeStore();
   const theme = mode === 'auto' ? (window.Telegram?.WebApp?.colorScheme || 'light') : mode;
-  
+
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
 
-
   const { setAdminStatus, allowedIds } = useAdminStore();
   const { fetchSettings } = useUIStore();
+
+  // ── Bug 1: sync cart & favorites with current catalog ──────────────
+  const products = useProductStore((s) => s.products);
+  const cartSyncWithCatalog = useCartStore((s) => s.syncWithCatalog);
+  const favoritesSyncWithCatalog = useFavoritesStore((s) => s.syncWithCatalog);
+
+  useEffect(() => {
+    if (products.length === 0) return;
+    const validIds = new Set(products.map((p) => p.id));
+    cartSyncWithCatalog(validIds);
+    favoritesSyncWithCatalog(validIds);
+  }, [products, cartSyncWithCatalog, favoritesSyncWithCatalog]);
+  // ── End sync ───────────────────────────────────────────────────────
 
   useEffect(() => {
     syncRouteStack(location.pathname, navigationType);
@@ -75,7 +93,7 @@ function App() {
     fetchSettings();
   }, [fetchSettings]);
 
-  // Handle Telegram start params
+  // Handle Telegram start params (Bug 3: product_ prefix handled)
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
     const startParam = (tg?.initDataUnsafe as any)?.start_param;
@@ -85,7 +103,7 @@ function App() {
         const id = startParam.replace('product_', '');
         navigate(`/product/${id}`, { replace: true });
         return;
-      } 
+      }
       if (startParam.startsWith('p_')) {
         const id = startParam.substring(2);
         navigate(`/product/${id}`, { replace: true });
@@ -105,8 +123,6 @@ function App() {
     }
   }, []);
 
-
-
   const getActiveTab = () => {
     const path = location.pathname;
     if (path === '/') return 'home';
@@ -124,12 +140,12 @@ function App() {
     <div className={`min-h-[var(--tg-height,100vh)] w-full text-app-text transition-colors duration-500 overflow-x-hidden relative ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
       <ThemeManager />
       <AdminToolbar />
-      
+
       <AnimatePresence mode="wait">
         {loading ? (
           <SplashScreen key="splash" onComplete={() => setLoading(false)} />
         ) : !tg?.initData ? (
-          <motion.div 
+          <motion.div
             key="browser-guard"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -143,7 +159,7 @@ function App() {
             <p className="mb-8 text-sm text-white/60 leading-relaxed">
               Пожалуйста, откройте это приложение через официальный Mini App в Telegram для полноценного опыта.
             </p>
-            <a 
+            <a
               href={`https://t.me/${import.meta.env.VITE_BOT_USERNAME || 'f_639_bot'}/open`}
               className="rounded-full bg-white px-8 py-4 text-xs font-bold uppercase tracking-widest text-black transition-transform active:scale-95"
             >
@@ -151,7 +167,7 @@ function App() {
             </a>
           </motion.div>
         ) : (
-          <motion.div 
+          <motion.div
             key="main-app"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -170,8 +186,8 @@ function App() {
               </header>
             )}
 
-            <main 
-              style={{ 
+            <main
+              style={{
                 minHeight: '100vh'
               }}
             >
@@ -195,12 +211,12 @@ function App() {
             </main>
 
             {location.pathname !== '/checkout' && (
-              <BottomNav 
-                activeTab={getActiveTab()} 
+              <BottomNav
+                activeTab={getActiveTab()}
                 setActiveTab={(tab) => {
                   if (tab === 'home') navigate('/');
                   else navigate(`/${tab}`);
-                }} 
+                }}
               />
             )}
           </motion.div>

@@ -49,7 +49,7 @@ export const ProductPage: React.FC = () => {
   const product = storeProduct ?? remoteProduct;
 
   // Metadata for sharing using deep links
-  const sharePayload = product ? `p_${product.id}` : 'store';
+  const sharePayload = product ? `product_${product.id}` : 'store';
   const shareText = `Посмотри на это украшение: ${product?.title}`;
 
   const botUsername = import.meta.env.VITE_BOT_USERNAME || 'f_639_bot';
@@ -90,7 +90,7 @@ export const ProductPage: React.FC = () => {
   useEffect(() => {
     // Premium opening feel: ensure we start at top
     window.scrollTo({ top: 0, behavior: 'auto' });
-    
+
     if (product) {
       analytics.trackViewItem(product);
     }
@@ -132,14 +132,14 @@ export const ProductPage: React.FC = () => {
       <AnimatePresence>
         {isShareSheetOpen && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsShareSheetOpen(false)}
               className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-md"
             />
-            <motion.div 
+            <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
@@ -149,9 +149,9 @@ export const ProductPage: React.FC = () => {
             >
               <div className="mb-8 mt-2 h-1 w-12 rounded-full bg-app-border-strong" />
               <h3 className="mb-8 font-serif text-lg font-semibold text-app-text">Поделиться</h3>
-              
+
               <div className="w-full space-y-3">
-                <button 
+                <button
                   type="button"
                   onClick={handleShareTelegram}
                   className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-app-border-strong bg-app-accent py-4 text-[10px] font-bold uppercase tracking-widest text-app-bg shadow-md transition-colors hover:opacity-95 active:scale-[0.99]"
@@ -159,7 +159,7 @@ export const ProductPage: React.FC = () => {
                   <Share2 size={16} className="text-app-bg" />
                   Поделиться в Telegram
                 </button>
-                <button 
+                <button
                   type="button"
                   onClick={handleCopyLink}
                   className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-app-border-strong bg-app-surface-2 py-4 text-[10px] font-bold uppercase tracking-widest text-app-text shadow-sm transition-colors hover:bg-app-surface-3 active:scale-[0.99]"
@@ -177,25 +177,24 @@ export const ProductPage: React.FC = () => {
       <div className="absolute left-0 right-0 z-30 px-6 flex items-center justify-between pointer-events-none" style={{ top: 'calc(var(--tg-safe-top, 0px) + 50px)' }}>
         <div className="h-10 w-10 flex-shrink-0 pointer-events-none" aria-hidden />
         <div className="flex gap-3 pointer-events-auto">
-          <button 
+          <button
             onClick={() => { haptics.impactLight(); setIsShareSheetOpen(true); }}
             className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-full bg-app-surface-1 border border-app-border-strong text-app-text shadow-[0_4px_16px_rgba(0,0,0,0.1)] active:scale-95 transition-transform"
           >
             <Share2 size={18} />
           </button>
           {!editMode ? (
-            <button 
+            <button
               onClick={() => { toggleFavorite(product); haptics.selection(); }}
-              className={`w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-full bg-app-surface-1 border border-app-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.1)] active:scale-95 transition-all ${
-                isFavorite(product.id) ? 'text-app-accent' : 'text-app-text'
-              }`}
+              className={`w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-full bg-app-surface-1 border border-app-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.1)] active:scale-95 transition-all ${isFavorite(product.id) ? 'text-app-accent' : 'text-app-text'
+                }`}
             >
               <Heart size={18} fill={isFavorite(product.id) ? 'currentColor' : 'none'} />
             </button>
           ) : (
-            <button 
-              onClick={async () => { 
-                if(window.confirm('Удалить товар?')) {
+            <button
+              onClick={async () => {
+                if (window.confirm('Удалить товар?')) {
                   try {
                     await api.products.remove(product.id);
                   } catch (error) {
@@ -215,12 +214,12 @@ export const ProductPage: React.FC = () => {
       </div>
 
       {/* Media Gallery */}
-      <ProductGallery 
+      <ProductGallery
         images={
-          product.images && product.images.length > 0 
-            ? [...product.images].sort((a,b) => (a.order ?? 0) - (b.order ?? 0)).map(img => img.url) 
+          product.images && product.images.length > 0
+            ? [...product.images].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map(img => img.url)
             : [product.image, ...(product.gallery ?? [])]
-        } 
+        }
       />
 
       {/* Product Content */}
@@ -229,27 +228,25 @@ export const ProductPage: React.FC = () => {
           <div className="flex items-center gap-2 flex-wrap min-h-6">
             <span
               onClick={() => editMode && updateProduct(product.id, { isNew: !product.isNew })}
-              className={`flex items-center rounded-[6px] border px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-wide backdrop-blur-md sm:text-[8px] ${
-                product.isNew
+              className={`flex items-center rounded-[6px] border px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-wide backdrop-blur-md sm:text-[8px] ${product.isNew
                   ? 'border-amber-800/35 bg-[#92400e]/90 text-amber-50 dark:border-amber-200/25 dark:bg-[#b45309]/90'
-                  : editMode 
+                  : editMode
                     ? 'cursor-pointer border-app-border-strong bg-white/5 text-white/40 opacity-50 hover:bg-white/10'
                     : 'hidden'
-              }`}
+                }`}
             >
-               {customBadgeLabels['new'] || 'New'}
+              {customBadgeLabels['new'] || 'New'}
             </span>
             <span
               onClick={() => editMode && updateProduct(product.id, { isBestSeller: !product.isBestSeller })}
-              className={`flex items-center rounded-[6px] border px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-wide backdrop-blur-md sm:text-[8px] ${
-                product.isBestSeller
+              className={`flex items-center rounded-[6px] border px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-wide backdrop-blur-md sm:text-[8px] ${product.isBestSeller
                   ? 'border-rose-900/40 bg-[#9f1239]/90 text-rose-50'
-                  : editMode 
+                  : editMode
                     ? 'cursor-pointer border-app-border-strong bg-white/5 text-white/40 opacity-50 hover:bg-white/10'
                     : 'hidden'
-              }`}
+                }`}
             >
-               {customBadgeLabels['hit'] || 'Hit'}
+              {customBadgeLabels['hit'] || 'Hit'}
             </span>
             {(product.isOnSale || (product.oldPrice != null && product.oldPrice > product.price)) && (
               <span className="flex items-center rounded-[6px] border border-emerald-900/40 bg-[#065f46]/90 px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-wide text-emerald-50 backdrop-blur-md sm:text-[8px]">
@@ -262,15 +259,14 @@ export const ProductPage: React.FC = () => {
               </span>
             )}
           </div>
-          <h1 
+          <h1
             contentEditable={editMode}
             onBlur={(e) => handleUpdate('title', e.currentTarget.textContent || '')}
             suppressContentEditableWarning
-            className={`text-3xl font-serif text-app-text leading-tight transition-all ${
-              editMode 
-                ? 'bg-white/5 outline-dashed outline-1 outline-app-accent/50 px-2 py-1 rounded select-text mb-2' 
+            className={`text-3xl font-serif text-app-text leading-tight transition-all ${editMode
+                ? 'bg-white/5 outline-dashed outline-1 outline-app-accent/50 px-2 py-1 rounded select-text mb-2'
                 : ''
-            }`}
+              }`}
           >
             {product.title}
           </h1>
@@ -278,24 +274,23 @@ export const ProductPage: React.FC = () => {
 
         {/* Size Selection */}
         {product.size && (
-          <SizeSelector 
-            sizes={[product.size]} 
-            selectedSize={selectedSize} 
-            onSelect={setSelectedSize} 
+          <SizeSelector
+            sizes={[product.size]}
+            selectedSize={selectedSize}
+            onSelect={setSelectedSize}
           />
         )}
 
         {/* Description */}
         <section className="mt-12 border-b border-neutral-500/[0.14] pb-12 dark:border-neutral-400/[0.12]">
-          <p 
+          <p
             contentEditable={editMode}
             onBlur={(e) => handleUpdate('description', e.currentTarget.textContent || '')}
             suppressContentEditableWarning
-            className={`text-sm text-app-text/80 leading-relaxed font-light transition-all ${
-              editMode 
-                ? 'bg-white/5 outline-dashed outline-1 outline-app-accent/50 p-3 rounded select-text' 
+            className={`text-sm text-app-text/80 leading-relaxed font-light transition-all ${editMode
+                ? 'bg-white/5 outline-dashed outline-1 outline-app-accent/50 p-3 rounded select-text'
                 : ''
-            }`}
+              }`}
           >
             {product.description}
           </p>
