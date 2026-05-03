@@ -50,22 +50,6 @@ function normalizeUploadError(error: unknown): string {
   return message || 'Upload failed';
 }
 
-function resolveUploadBaseUrl(): string {
-  const explicit = (import.meta.env.VITE_UPLOAD_BASE_URL || '').trim();
-  if (explicit) return explicit.replace(/\/+$/, '');
-
-  const host = window.location.hostname;
-  if (host === 'localhost' || host === '127.0.0.1') {
-    return 'http://localhost:8787';
-  }
-
-  const apiBase = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
-  if (!apiBase) {
-    return '';
-  }
-  return apiBase;
-}
-
 function resolveUploadCandidates(): string[] {
   const explicit = (import.meta.env.VITE_UPLOAD_BASE_URL || '').trim().replace(/\/+$/, '');
   const apiBase = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
