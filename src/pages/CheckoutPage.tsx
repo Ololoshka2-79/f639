@@ -57,8 +57,6 @@ export const CheckoutPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-  const [successOrderId, _setSuccessOrderId] = useState<string | null>(null);
-  const [successItemsCount, _setSuccessItemsCount] = useState(0);
   const hasTrackedCheckout = _useRef(false);
 
   useEffect(() => {
@@ -161,8 +159,6 @@ export const CheckoutPage: React.FC = () => {
       } else {
         clearCart();
       }
-      _setSuccessOrderId(orderId);
-      _setSuccessItemsCount(itemCount);
       haptics.success();
 
       // Показываем кастомный попап вместо редиректа на OrderSuccess
