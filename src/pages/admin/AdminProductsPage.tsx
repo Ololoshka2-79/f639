@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAdminStore } from '../../store/adminStore';
-import { useAdminProducts } from '../../hooks/useAdminProducts';
+import { useMergedCatalogProducts } from '../../hooks/useMergedCatalogProducts';
 import { ProductCard } from '../../components/admin/ProductCard';
 import { CategorySidebar } from '../../components/admin/CategorySidebar';
 import { ProductToolbar } from '../../components/admin/ProductToolbar';
@@ -10,23 +10,49 @@ import { DeleteProductModal } from '../../components/admin/DeleteProductModal';
 import { ProductEditorModal } from '../../components/admin/ProductEditorModal';
 import { Info, PackageOpen } from 'lucide-react';
 import type { Product } from '../../types';
+import { useProductStore } from '../../store/productStore';
 import { api } from '../../lib/api/endpoints';
 import { queryKeys } from '../../lib/queryKeys';
 
 export const AdminProductsPage: React.FC = () => {
     const { isAdmin } = useAdminStore();
     const queryClient = useQueryClient();
-    const { 
-        products, 
-        allCategories, 
-        searchQuery, 
-        setSearchQuery, 
-        selectedCategoryId, 
-        setSelectedCategoryId,
-        sortBy,
-        setSortBy,
-        actions 
-    } = useAdminProducts();
+
+    // ЕДИНЫЙ источник данных — API через React Query.
+    // Все пользователи (админы и обычные) видят одни и те же товары.
+    const { products: allProducts, isLoading } = useMergedCatalogProducts();
+
+    // Zustand store — ТОЛЬКО для optimistic UI при CRUD (categories + быстрые мутации).
+    // Данные ПОЛНОСТЬЮ перезаписываются из API при каждом ответе (useEffect в хуке).
+    const {
+        categories: allCategories,
+        updateProduct,
+        addProduct,
+        duplicateProduct,
+        removeProduct,
+        addCategory,
+        updateCategory,
+        removeCategory,
+    } = useProductStore();
+
+    // Локальный UI state — поиск, фильтрация, сортировка
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+    const [sortBy, setSortBy] = useState<'created' | 'title' | 'price' | 'popularity'>('created');
+
+    // Деривированное состояние — локальная фильтрация/сортировка из API-данных
+    const products = useMemo(() => {
+        return (allProducts || []).filter(p => {
+            const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesCategory = !selectedCategoryId || p.categoryId === selectedCategoryId;
+            return matchesSearch && matchesCategory;
+        }).sort((a, b) => {
+            if (sortBy === 'title') return a.title.localeCompare(b.title);
+            if (sortBy === 'price') return a.price - b.price;
+            if (sortBy === 'popularity') return (a.isBestSeller ? -1 : 1);
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+    }, [allProducts, searchQuery, selectedCategoryId, sortBy]);
 
     // Modal States
     const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -55,16 +81,18 @@ export const AdminProductsPage: React.FC = () => {
 
     const confirmDelete = async () => {
         if (!deletingProduct) return;
-        // Удаляем локально в store сразу — UX должен быть отзывчивым
-        actions.removeProduct(deletingProduct.id);
-        // Отправляем запрос на сервер, но не ждём его для закрытия модалки
+        // Оптимистичное удаление из Zustand store — мгновенный UX
+        removeProduct(deletingProduct.id);
+        // Отправляем запрос на сервер
         api.products.remove(deletingProduct.id)
             .then(() => {
-                // Инвалидируем кеш → все клиенты получат свежие данные
+                // Инвалидируем React Query кеш → перезагрузка из API → синхронизация ВСЕХ
                 queryClient.invalidateQueries({ queryKey: queryKeys.products });
             })
             .catch((e) => {
                 console.warn('[Admin] Server delete failed, item removed locally:', e);
+                // При ошибке сервера — тоже инвалидируем кеш, чтобы вернуть состояние
+                queryClient.invalidateQueries({ queryKey: queryKeys.products });
             });
         setDeletingProduct(undefined);
         setIsDeleteOpen(false);
@@ -73,10 +101,10 @@ export const AdminProductsPage: React.FC = () => {
     const handleSaveProduct = async (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
         if (editingProduct) {
             // Редактирование существующего товара
-            const merged: Product = { 
-                ...editingProduct, 
-                ...productData, 
-                updatedAt: new Date().toISOString() 
+            const merged: Product = {
+                ...editingProduct,
+                ...productData,
+                updatedAt: new Date().toISOString()
             };
             if (!merged.slug) {
                 merged.slug = merged.title
@@ -86,15 +114,16 @@ export const AdminProductsPage: React.FC = () => {
                     .replace(/-+/g, '-')
                     .slice(0, 60);
             }
-            // Сначала обновляем локально — UX
-            actions.updateProduct(editingProduct.id, merged);
-            // Затем отправляем на сервер (не блокируем UI)
+            // Оптимистично обновляем Zustand — мгновенный UX
+            updateProduct(editingProduct.id, merged);
+            // Отправляем на сервер
             api.products.upsert(merged)
                 .then(() => {
                     queryClient.invalidateQueries({ queryKey: queryKeys.products });
                 })
                 .catch((e) => {
                     console.warn('[Admin] Server upsert failed, item saved locally:', e);
+                    queryClient.invalidateQueries({ queryKey: queryKeys.products });
                 });
         } else {
             // Создание нового товара
@@ -106,23 +135,24 @@ export const AdminProductsPage: React.FC = () => {
                 .replace(/-+/g, '-')
                 .slice(0, 60) + '-' + id;
             const now = new Date().toISOString();
-            const payload: Product = { 
-                ...productData, 
-                id, 
+            const payload: Product = {
+                ...productData,
+                id,
                 slug,
-                createdAt: now, 
+                createdAt: now,
                 updatedAt: now,
-                images: productData.images || [] 
+                images: productData.images || []
             } as Product;
-            // Сначала добавляем локально — мгновенный UX
-            actions.addProduct(payload);
-            // Затем отправляем на сервер (не блокируем UI)
+            // Оптимистично добавляем в Zustand — мгновенный UX
+            addProduct(payload);
+            // Отправляем на сервер
             api.products.upsert(payload)
                 .then(() => {
                     queryClient.invalidateQueries({ queryKey: queryKeys.products });
                 })
                 .catch((e) => {
                     console.warn('[Admin] Server create failed, product saved locally:', e);
+                    queryClient.invalidateQueries({ queryKey: queryKeys.products });
                 });
         }
         setEditingProduct(undefined);
@@ -152,7 +182,7 @@ export const AdminProductsPage: React.FC = () => {
                         onAddCategory={() => {
                             const name = prompt('Название категории:');
                             if (name) {
-                                actions.addCategory({ 
+                                addCategory({ 
                                     name, 
                                     slug: name.toLowerCase().replace(/ /g, '-'), 
                                     sortOrder: allCategories.length + 1 
@@ -161,7 +191,7 @@ export const AdminProductsPage: React.FC = () => {
                         }}
                         onEditCategory={(cat) => {
                             const name = prompt('Новое название:', cat.name);
-                            if (name) actions.updateCategory(cat.id, { name });
+                            if (name) updateCategory(cat.id, { name });
                         }}
                         onDeleteCategory={(id) => {
                             const catProducts = products.filter(p => p.categoryId === id);
@@ -171,14 +201,14 @@ export const AdminProductsPage: React.FC = () => {
                                     // Удаляем товары категории с сервера и из store
                                     catProducts.forEach(p => {
                                         api.products.remove(p.id).catch(() => {});
-                                        actions.removeProduct(p.id);
+                                        removeProduct(p.id);
                                     });
-                                    actions.removeCategory(id);
+                                    removeCategory(id);
                                     // Инвалидируем кеш → все клиенты синхронизируются
                                     queryClient.invalidateQueries({ queryKey: queryKeys.products });
                                 }
                             } else {
-                                if (window.confirm('Удалить категорию?')) actions.removeCategory(id);
+                                if (window.confirm('Удалить категорию?')) removeCategory(id);
                             }
                         }}
                      />
@@ -225,8 +255,8 @@ export const AdminProductsPage: React.FC = () => {
                                     key={p.id}
                                     product={p}
                                     onEdit={() => handleEditProduct(p)}
-                                    onDuplicate={() => actions.duplicateProduct(p.id)}
-                                    onToggleVisibility={() => actions.updateProduct(p.id, { isHidden: !p.isHidden })}
+                                    onDuplicate={() => duplicateProduct(p.id)}
+                                    onToggleVisibility={() => updateProduct(p.id, { isHidden: !p.isHidden })}
                                     onDelete={() => handleDeleteProduct(p)}
                                 />
                             ))}
