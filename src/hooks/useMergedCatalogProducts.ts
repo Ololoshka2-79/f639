@@ -5,18 +5,23 @@ import { queryKeys } from '../lib/queryKeys';
 import { useProductStore } from '../store/productStore';
 import { CATEGORIES } from '../mocks/data';
 import { shouldUseApiMockFallback } from '../lib/env';
+import { getFallbackProductsList } from '../mocks/apiFallback';
 
 /**
- * Merges remote catalog products with local store products.
+ * ЕДИНЫЙ ИСТОЧНИК ПРАВДЫ для каталога товаров.
  *
- * RULES:
- * 1. Local store = source of truth for admin CRUD operations.
- * 2. Remote API data (when available) supplements local data.
- * 3. Mock fallback data is NEVER written into the local store.
- * 4. When API returns data, it is merged: remote items = authoritative,
- *    local-only items (admin-created) are preserved.
- * 5. When API fails: if fallback is enabled, mock data is used READ-ONLY
- *    for display (not merged into store).
+ * ПРИНЦИПЫ:
+ * 1. API (server/data/products.json) — единственный авторитетный источник.
+ *    Store (Zustand + localStorage) — локальный кеш.
+ * 2. При успешном ответе API → ВСЕГДА мержим в store:
+ *    API-товары имеют приоритет над локальными с тем же ID,
+ *    локальные экстры (созданные админом) сохраняются.
+ * 3. Мок-детекция по префиксу 'prod-' УДАЛЕНА — она ломала мерж,
+ *    поскольку серверный products.json засеян теми же мок-данными.
+ * 4. При ошибке API → моки ТОЛЬКО для отображения (read-only),
+ *    если VITE_API_FALLBACK_TO_MOCKS=true. Моки НЕ пишутся в store.
+ * 5. После мутаций (CRUD) → queryClient.invalidateQueries для синхронизации
+ *    всех клиентов (вызывается из AdminProductsPage).
  */
 export function useMergedCatalogProducts() {
   const localProducts = useProductStore((s) => s.products);
@@ -24,40 +29,30 @@ export function useMergedCatalogProducts() {
   const setCategories = useProductStore((s) => s.setCategories);
   const initialized = useRef(false);
 
-  const { data: remoteList, isLoading, isFetching } = useQuery({
+  const { data: remoteList, isLoading, isFetching, isError } = useQuery({
     queryKey: queryKeys.products,
     queryFn: () => api.products.list(),
-    staleTime: 60_000,
+    staleTime: 15_000, // 15 sec — быстрая синхронизация между пользователями
     retry: 1,
   });
 
-  const isMockFallback = useMemo(() => {
-    if (!remoteList || !Array.isArray(remoteList)) {
-      return false;
-    }
-    if (remoteList.length === 0) {
-      // Empty remote = real API but no data yet. NOT mock fallback.
-      return false;
-    }
-    // Detect mock data: hardcoded 'prod-' prefix or known mock indicators
-    // Also check all items — if ANY has prod- prefix, it's likely mock
-    return remoteList.every((p) => p.id?.startsWith('prod-') ?? false);
-  }, [remoteList]);
-
-  // Merge remote list into local store ONLY for real API data (never for mocks)
+  // Merge remote list into local store on EVERY successful API response.
+  // No mock detection — if API returned data, it's authoritative.
   useEffect(() => {
-    if (remoteList !== undefined && Array.isArray(remoteList)) {
-      // Only merge real API data into store — not mock fallback
-      if (!isMockFallback && remoteList.length > 0) {
-        const remoteIds = new Set(remoteList.map((p) => p.id));
-        const localExtras = localProducts.filter((p) => !remoteIds.has(p.id));
-        const merged = [...remoteList, ...localExtras];
-        setProducts(merged);
-      }
-      // If remoteList is empty (empty JSON file), keep local products as-is
-      initialized.current = true;
+    if (remoteList === undefined || !Array.isArray(remoteList)) return;
+
+    if (remoteList.length > 0) {
+      // API вернул товары — мержим в store
+      const remoteIds = new Set(remoteList.map((p) => p.id));
+      const localExtras = localProducts.filter((p) => !remoteIds.has(p.id));
+      const merged = [...remoteList, ...localExtras];
+      setProducts(merged);
+    } else if (remoteList.length === 0 && localProducts.length > 0) {
+      // API пуст (все товары удалены) → синхронизируем store
+      setProducts([]);
     }
-  }, [remoteList, setProducts, isMockFallback]); // eslint-disable-line react-hooks/exhaustive-deps
+    initialized.current = true;
+  }, [remoteList, setProducts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize categories from mocks if store is empty
   useEffect(() => {
@@ -68,25 +63,23 @@ export function useMergedCatalogProducts() {
   }, [setCategories]);
 
   const products = useMemo(() => {
-    if (remoteList !== undefined && Array.isArray(remoteList)) {
-      if (isMockFallback && shouldUseApiMockFallback()) {
-        // Mock fallback: use local store products first, supplement with mock data
-        // for products that don't exist locally (read-only)
-        const localIds = new Set(localProducts.map((p) => p.id));
-        const mockExtras = remoteList.filter((p) => !localIds.has(p.id));
-        return [...localProducts, ...mockExtras];
-      }
-      if (!isMockFallback) {
-        // Real API: merge remote wins, local extras preserved
-        const remoteIds = new Set(remoteList.map((p) => p.id));
-        const localExtras = localProducts.filter((p) => !remoteIds.has(p.id));
-        return [...remoteList, ...localExtras];
-      }
-      // Fallback disabled: only show local products
-      return localProducts;
+    // API успешно ответил и есть данные
+    if (remoteList !== undefined && Array.isArray(remoteList) && remoteList.length > 0) {
+      const remoteIds = new Set(remoteList.map((p) => p.id));
+      const localExtras = localProducts.filter((p) => !remoteIds.has(p.id));
+      return [...remoteList, ...localExtras];
     }
+
+    // API не ответил или вернул ошибку — fallback к мокам (read-only)
+    if (isError && shouldUseApiMockFallback()) {
+      const localIds = new Set(localProducts.map((p) => p.id));
+      const mockExtras = getFallbackProductsList({}).filter((p) => !localIds.has(p.id));
+      return [...localProducts, ...mockExtras];
+    }
+
+    // Нет API, нет fallback — только локальный store
     return localProducts;
-  }, [remoteList, localProducts, isMockFallback]);
+  }, [remoteList, localProducts, isError]);
 
   return {
     products,

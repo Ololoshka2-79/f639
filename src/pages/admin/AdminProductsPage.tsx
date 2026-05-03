@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAdminStore } from '../../store/adminStore';
 import { useAdminProducts } from '../../hooks/useAdminProducts';
 import { ProductCard } from '../../components/admin/ProductCard';
@@ -10,9 +11,11 @@ import { ProductEditorModal } from '../../components/admin/ProductEditorModal';
 import { Info, PackageOpen } from 'lucide-react';
 import type { Product } from '../../types';
 import { api } from '../../lib/api/endpoints';
+import { queryKeys } from '../../lib/queryKeys';
 
 export const AdminProductsPage: React.FC = () => {
     const { isAdmin } = useAdminStore();
+    const queryClient = useQueryClient();
     const { 
         products, 
         allCategories, 
@@ -55,9 +58,14 @@ export const AdminProductsPage: React.FC = () => {
         // Удаляем локально в store сразу — UX должен быть отзывчивым
         actions.removeProduct(deletingProduct.id);
         // Отправляем запрос на сервер, но не ждём его для закрытия модалки
-        api.products.remove(deletingProduct.id).catch((e) => {
-            console.warn('[Admin] Server delete failed, item removed locally:', e);
-        });
+        api.products.remove(deletingProduct.id)
+            .then(() => {
+                // Инвалидируем кеш → все клиенты получат свежие данные
+                queryClient.invalidateQueries({ queryKey: queryKeys.products });
+            })
+            .catch((e) => {
+                console.warn('[Admin] Server delete failed, item removed locally:', e);
+            });
         setDeletingProduct(undefined);
         setIsDeleteOpen(false);
     };
@@ -81,9 +89,13 @@ export const AdminProductsPage: React.FC = () => {
             // Сначала обновляем локально — UX
             actions.updateProduct(editingProduct.id, merged);
             // Затем отправляем на сервер (не блокируем UI)
-            api.products.upsert(merged).catch((e) => {
-                console.warn('[Admin] Server upsert failed, item saved locally:', e);
-            });
+            api.products.upsert(merged)
+                .then(() => {
+                    queryClient.invalidateQueries({ queryKey: queryKeys.products });
+                })
+                .catch((e) => {
+                    console.warn('[Admin] Server upsert failed, item saved locally:', e);
+                });
         } else {
             // Создание нового товара
             const id = Math.random().toString(36).slice(2, 11);
@@ -105,9 +117,13 @@ export const AdminProductsPage: React.FC = () => {
             // Сначала добавляем локально — мгновенный UX
             actions.addProduct(payload);
             // Затем отправляем на сервер (не блокируем UI)
-            api.products.upsert(payload).catch((e) => {
-                console.warn('[Admin] Server create failed, product saved locally:', e);
-            });
+            api.products.upsert(payload)
+                .then(() => {
+                    queryClient.invalidateQueries({ queryKey: queryKeys.products });
+                })
+                .catch((e) => {
+                    console.warn('[Admin] Server create failed, product saved locally:', e);
+                });
         }
         setEditingProduct(undefined);
         setIsEditorOpen(false);
@@ -148,10 +164,18 @@ export const AdminProductsPage: React.FC = () => {
                             if (name) actions.updateCategory(cat.id, { name });
                         }}
                         onDeleteCategory={(id) => {
-                            const count = products.filter(p => p.categoryId === id).length;
+                            const catProducts = products.filter(p => p.categoryId === id);
+                            const count = catProducts.length;
                             if (count > 0) {
                                 if (window.confirm(`В этой категории ${count} товаров. Удалить их все вместе с категорией?`)) {
+                                    // Удаляем товары категории с сервера и из store
+                                    catProducts.forEach(p => {
+                                        api.products.remove(p.id).catch(() => {});
+                                        actions.removeProduct(p.id);
+                                    });
                                     actions.removeCategory(id);
+                                    // Инвалидируем кеш → все клиенты синхронизируются
+                                    queryClient.invalidateQueries({ queryKey: queryKeys.products });
                                 }
                             } else {
                                 if (window.confirm('Удалить категорию?')) actions.removeCategory(id);

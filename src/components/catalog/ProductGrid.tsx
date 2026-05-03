@@ -66,7 +66,7 @@ export const ProductGrid: React.FC = () => {
           >
             <ProductCard 
               product={product} 
-              onClick={() => navigate(`/product/${product.id}`)}
+              onClick={() => navigate(`/product/${product.id}${product.slug ? '-' + product.slug : ''}`)}
             />
           </motion.div>
         ))}

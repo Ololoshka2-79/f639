@@ -38,7 +38,7 @@ function normalizeUploadError(error: unknown): string {
     return 'Доступ запрещен. Проверьте TELEGRAM_BOT_TOKEN, ADMIN_IDS и что запуск внутри Telegram WebApp.';
   }
   if (lower.includes('file is too large') || lower.includes('413')) {
-    return 'Файл слишком большой. Максимум 5MB.';
+    return 'Файл слишком большой. Максимум 15MB.';
   }
   if (lower.includes('only image files')) {
     return 'Разрешены только изображения.';
