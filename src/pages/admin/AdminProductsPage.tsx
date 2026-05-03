@@ -8,7 +8,7 @@ import { CategorySidebar } from '../../components/admin/CategorySidebar';
 import { ProductToolbar } from '../../components/admin/ProductToolbar';
 import { DeleteProductModal } from '../../components/admin/DeleteProductModal';
 import { ProductEditorModal } from '../../components/admin/ProductEditorModal';
-import { Info, PackageOpen } from 'lucide-react';
+import { Info, PackageOpen, AlertTriangle, X } from 'lucide-react';
 import type { Product } from '../../types';
 import { useProductStore } from '../../store/productStore';
 import { api } from '../../lib/api/endpoints';
@@ -60,6 +60,15 @@ export const AdminProductsPage: React.FC = () => {
     const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
     const [deletingProduct, setDeletingProduct] = useState<Product | undefined>(undefined);
 
+    // Toast errors visible to admin
+    const [toastError, setToastError] = useState<string | null>(null);
+
+    const showError = (message: string) => {
+        setToastError(message);
+        // Auto-dismiss after 8 seconds
+        setTimeout(() => setToastError(null), 8000);
+    };
+
     if (!isAdmin) {
         return <Navigate to="/" replace />;
     }
@@ -83,19 +92,20 @@ export const AdminProductsPage: React.FC = () => {
         if (!deletingProduct) return;
         // Оптимистичное удаление из Zustand store — мгновенный UX
         removeProduct(deletingProduct.id);
-        // Отправляем запрос на сервер
-        api.products.remove(deletingProduct.id)
-            .then(() => {
-                // Инвалидируем React Query кеш → перезагрузка из API → синхронизация ВСЕХ
-                queryClient.invalidateQueries({ queryKey: queryKeys.products });
-            })
-            .catch((e) => {
-                console.warn('[Admin] Server delete failed, item removed locally:', e);
-                // При ошибке сервера — тоже инвалидируем кеш, чтобы вернуть состояние
-                queryClient.invalidateQueries({ queryKey: queryKeys.products });
-            });
         setDeletingProduct(undefined);
         setIsDeleteOpen(false);
+        // Отправляем запрос на сервер
+        try {
+            await api.products.remove(deletingProduct.id);
+            // УСПЕХ: инвалидируем кеш → синхронизация ВСЕХ клиентов
+            queryClient.invalidateQueries({ queryKey: queryKeys.products });
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Ошибка сервера';
+            console.error('[Admin] Server delete failed:', msg);
+            showError(`Не удалось удалить на сервере: ${msg}. Товар удалён локально — обновите страницу позже.`);
+            // НЕ invalidateQueries — сохраняем оптимистичное удаление в UI.
+            // Серверный refetch вернул бы старый список с этим товаром — он бы «воскрес».
+        }
     };
 
     const handleSaveProduct = async (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -116,15 +126,19 @@ export const AdminProductsPage: React.FC = () => {
             }
             // Оптимистично обновляем Zustand — мгновенный UX
             updateProduct(editingProduct.id, merged);
+            setEditingProduct(undefined);
+            setIsEditorOpen(false);
             // Отправляем на сервер
-            api.products.upsert(merged)
-                .then(() => {
-                    queryClient.invalidateQueries({ queryKey: queryKeys.products });
-                })
-                .catch((e) => {
-                    console.warn('[Admin] Server upsert failed, item saved locally:', e);
-                    queryClient.invalidateQueries({ queryKey: queryKeys.products });
-                });
+            try {
+                await api.products.upsert(merged);
+                // УСПЕХ: инвалидируем кеш
+                queryClient.invalidateQueries({ queryKey: queryKeys.products });
+            } catch (e) {
+                const msg = e instanceof Error ? e.message : 'Ошибка сервера';
+                console.error('[Admin] Server upsert failed:', msg);
+                showError(`Не удалось сохранить на сервере: ${msg}. Изменения сохранены локально.`);
+                // НЕ invalidateQueries — сохраняем оптимистичные данные в UI
+            }
         } else {
             // Создание нового товара
             const id = Math.random().toString(36).slice(2, 11);
@@ -145,18 +159,20 @@ export const AdminProductsPage: React.FC = () => {
             } as Product;
             // Оптимистично добавляем в Zustand — мгновенный UX
             addProduct(payload);
+            setEditingProduct(undefined);
+            setIsEditorOpen(false);
             // Отправляем на сервер
-            api.products.upsert(payload)
-                .then(() => {
-                    queryClient.invalidateQueries({ queryKey: queryKeys.products });
-                })
-                .catch((e) => {
-                    console.warn('[Admin] Server create failed, product saved locally:', e);
-                    queryClient.invalidateQueries({ queryKey: queryKeys.products });
-                });
+            try {
+                await api.products.upsert(payload);
+                // УСПЕХ: инвалидируем кеш → синхронизация
+                queryClient.invalidateQueries({ queryKey: queryKeys.products });
+            } catch (e) {
+                const msg = e instanceof Error ? e.message : 'Ошибка сервера';
+                console.error('[Admin] Server create failed:', msg);
+                showError(`Не удалось сохранить на сервере: ${msg}. Товар сохранён локально — обновите страницу позже.`);
+                // НЕ invalidateQueries — сохраняем оптимистично созданный товар в UI
+            }
         }
-        setEditingProduct(undefined);
-        setIsEditorOpen(false);
     };
 
     return (
@@ -280,6 +296,22 @@ export const AdminProductsPage: React.FC = () => {
                 onConfirm={confirmDelete}
                 productTitle={deletingProduct?.title || ''}
             />
+
+            {/* Error Toast */}
+            {toastError && (
+                <div className="fixed bottom-6 left-6 right-6 z-[200] max-w-lg mx-auto animate-in slide-in-from-bottom-4">
+                    <div className="flex items-start gap-3 rounded-2xl border border-red-500/40 bg-red-950/95 p-5 shadow-2xl backdrop-blur-md">
+                        <AlertTriangle size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
+                        <p className="flex-1 text-xs text-red-200 leading-relaxed">{toastError}</p>
+                        <button
+                            onClick={() => setToastError(null)}
+                            className="flex-shrink-0 rounded-full p-1 text-red-400 hover:bg-red-800/50 transition-colors"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
