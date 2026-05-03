@@ -1,4 +1,4 @@
-import { createHash, createHmac } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -40,6 +40,10 @@ export function validateConfig() {
 
   if (missing.length) {
     console.warn(`[server] Warning! Missing required env vars: ${missing.join(', ')}. Some admin features might not work.`);
+  }
+
+  if (!config.telegramBotToken) {
+    throw new Error('TELEGRAM_BOT_TOKEN is required for server to function');
   }
 }
 

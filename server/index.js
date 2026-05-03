@@ -25,10 +25,19 @@ const app = express();
 app.use(
   cors({
     origin: (origin, callback) => {
-      // initData signature is verified server-side, so strict origin allowlist is optional here.
-      // Allowing all origins removes Telegram WebView/CORS edge issues on mobile clients.
-      void origin;
-      return callback(null, true);
+      // Если allowedOrigins пуст — разрешаем все (для обратной совместимости)
+      if (config.allowedOrigins.length === 0) {
+        return callback(null, true);
+      }
+      // Разрешаем отсутствие origin (серверные запросы, curl и т.д.)
+      if (!origin) {
+        return callback(null, true);
+      }
+      if (config.allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      console.warn(`[CORS] Blocked origin: ${origin}`);
+      return callback(new Error('Not allowed by CORS'));
     },
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'x-telegram-init-data', 'x-tg-init-data'],
@@ -64,15 +73,7 @@ function uploadBufferToCloudinary(fileBuffer, folder) {
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
-app.get('/v1/health', (_req, res) => {
-  res.json({ ok: true });
-});
-
 app.get('/products', async (_req, res) => {
-  const products = await listProducts();
-  res.json(products);
-});
-app.get('/v1/products', async (_req, res) => {
   const products = await listProducts();
   res.json(products);
 });
@@ -86,33 +87,8 @@ app.post('/products', requireAdmin, async (req, res) => {
   const saved = await upsertProduct(product);
   return res.json(saved);
 });
-app.post('/v1/products', requireAdmin, async (req, res) => {
-  const product = req.body;
-  if (!product?.id) {
-    return res.status(400).json({ message: 'Product id is required' });
-  }
-  console.log(`[POST /v1/products] Creating/Updating product: ${product.id} - ${product.title}`);
-  const saved = await upsertProduct(product);
-  return res.json(saved);
-});
 
 app.post('/upload', requireAdmin, upload.single('file'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: 'File is required' });
-  }
-
-  try {
-    const result = await uploadBufferToCloudinary(req.file.buffer, 'products');
-    return res.json({
-      url: result.secure_url,
-      public_id: result.public_id,
-    });
-  } catch (error) {
-    console.error('[upload] cloudinary upload failed', error);
-    return res.status(502).json({ message: 'Cloudinary upload failed' });
-  }
-});
-app.post('/v1/upload', requireAdmin, upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'File is required' });
   }
@@ -158,34 +134,6 @@ app.delete('/product/:id', requireAdmin, async (req, res) => {
 
   await removeProductById(productId);
   console.log(`[DELETE /product/${productId}] Successfully deleted`);
-  return res.status(204).send();
-});
-app.delete('/v1/product/:id', requireAdmin, async (req, res) => {
-  const productId = req.params.id;
-  const product = await getProductById(productId);
-
-  if (!product) {
-    return res.status(404).json({ message: 'Product not found' });
-  }
-
-  const publicIds = [
-    product.image_public_id,
-    ...(Array.isArray(product.gallery_public_ids) ? product.gallery_public_ids : []),
-  ].filter(Boolean);
-
-  if (publicIds.length > 0) {
-    try {
-      await Promise.all(publicIds.map((publicId) => cloudinary.uploader.destroy(publicId)));
-    } catch (error) {
-      console.error('[delete] cloudinary destroy failed', {
-        productId,
-        publicIds,
-        error,
-      });
-    }
-  }
-
-  await removeProductById(productId);
   return res.status(204).send();
 });
 
@@ -270,25 +218,15 @@ const handlePostOrder = async (req, res) => {
 };
 
 app.get('/orders', handleGetOrders);
-app.get('/v1/orders', handleGetOrders);
 app.post('/orders', handlePostOrder);
-app.post('/v1/orders', handlePostOrder);
 
 // --- Settings Endpoints ---
 app.get('/settings', async (_req, res) => {
   const settings = await getSettings();
   res.json(settings);
 });
-app.get('/v1/settings', async (_req, res) => {
-  const settings = await getSettings();
-  res.json(settings);
-});
 
 app.post('/settings', requireAdmin, async (req, res) => {
-  const settings = await updateSettings(req.body);
-  res.json(settings);
-});
-app.post('/v1/settings', requireAdmin, async (req, res) => {
   const settings = await updateSettings(req.body);
   res.json(settings);
 });

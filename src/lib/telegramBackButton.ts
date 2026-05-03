@@ -47,7 +47,7 @@ export function syncTelegramBackButtonLabel(mode: TelegramBackLabelMode): void {
     };
     extended.setText?.(label);
     extended.setParams?.({ is_visible: true, text: label });
-  } catch {
-    /* клиент без кастомного текста — остаётся дефолтная иконка, onClick всё равно корректен */
-  }
+    } catch {
+      console.warn('[telegramBackButton] Failed to hide back button via hash change');
+    }
 }

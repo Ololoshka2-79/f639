@@ -105,7 +105,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
               onDragEnd={(_, info) => {
                 const threshold = 120;
                 const velocityThreshold = 800;
-                
+
                 if (info.offset.x < -threshold || info.velocity.x < -velocityThreshold) {
                   setSwipedItemId(item.id);
                   haptics.selection();
@@ -188,7 +188,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
             </div>
           </div>
           <Button variant="gold" fullWidth className="h-14" onClick={onCheckout}>
-            Оформить заказ
+            Продолжить
           </Button>
         </div>
       </div>

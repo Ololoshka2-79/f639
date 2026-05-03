@@ -26,6 +26,15 @@ export const ProductPage: React.FC = () => {
   const [isShareSheetOpen, setIsShareSheetOpen] = useState(false);
   const { toggleFavorite, isFavorite } = useFavoritesStore();
   const { editMode } = useAdminStore();
+
+  const goBack = () => {
+    haptics.impactLight();
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate('/', { replace: true });
+    }
+  };
   const idPart = idSlug?.split('-')[0] ?? '';
   const slug = idSlug?.split('-').slice(1).join('-') ?? '';
 
@@ -174,7 +183,14 @@ export const ProductPage: React.FC = () => {
 
       {/* Top Navigation */}
       <div className="absolute left-0 right-0 z-30 px-6 flex items-center justify-between pointer-events-none" style={{ top: 'calc(var(--tg-safe-top, 0px) + 50px)' }}>
-        <div className="h-10 w-10 flex-shrink-0 pointer-events-none" aria-hidden />
+        <button
+          onClick={goBack}
+          className="pointer-events-auto w-10 h-10 flex items-center justify-center rounded-full bg-app-surface-1 border border-app-border-strong text-app-text shadow-[0_4px_16px_rgba(0,0,0,0.1)] active:scale-95 transition-transform"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
         <div className="flex gap-3 pointer-events-auto">
           <button
             onClick={() => { haptics.impactLight(); setIsShareSheetOpen(true); }}
@@ -228,10 +244,10 @@ export const ProductPage: React.FC = () => {
             <span
               onClick={() => editMode && updateProduct(product.id, { isNew: !product.isNew })}
               className={`flex items-center rounded-[6px] border px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-wide backdrop-blur-md sm:text-[8px] ${product.isNew
-                  ? 'border-amber-800/35 bg-[#92400e]/90 text-amber-50 dark:border-amber-200/25 dark:bg-[#b45309]/90'
-                  : editMode
-                    ? 'cursor-pointer border-app-border-strong bg-white/5 text-white/40 opacity-50 hover:bg-white/10'
-                    : 'hidden'
+                ? 'border-amber-800/35 bg-[#92400e]/90 text-amber-50 dark:border-amber-200/25 dark:bg-[#b45309]/90'
+                : editMode
+                  ? 'cursor-pointer border-app-border-strong bg-white/5 text-white/40 opacity-50 hover:bg-white/10'
+                  : 'hidden'
                 }`}
             >
               {customBadgeLabels['new'] || 'New'}
@@ -239,10 +255,10 @@ export const ProductPage: React.FC = () => {
             <span
               onClick={() => editMode && updateProduct(product.id, { isBestSeller: !product.isBestSeller })}
               className={`flex items-center rounded-[6px] border px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-wide backdrop-blur-md sm:text-[8px] ${product.isBestSeller
-                  ? 'border-rose-900/40 bg-[#9f1239]/90 text-rose-50'
-                  : editMode
-                    ? 'cursor-pointer border-app-border-strong bg-white/5 text-white/40 opacity-50 hover:bg-white/10'
-                    : 'hidden'
+                ? 'border-rose-900/40 bg-[#9f1239]/90 text-rose-50'
+                : editMode
+                  ? 'cursor-pointer border-app-border-strong bg-white/5 text-white/40 opacity-50 hover:bg-white/10'
+                  : 'hidden'
                 }`}
             >
               {customBadgeLabels['hit'] || 'Hit'}
@@ -263,8 +279,8 @@ export const ProductPage: React.FC = () => {
             onBlur={(e) => handleUpdate('title', e.currentTarget.textContent || '')}
             suppressContentEditableWarning
             className={`text-3xl font-serif text-app-text leading-tight transition-all ${editMode
-                ? 'bg-white/5 outline-dashed outline-1 outline-app-accent/50 px-2 py-1 rounded select-text mb-2'
-                : ''
+              ? 'bg-white/5 outline-dashed outline-1 outline-app-accent/50 px-2 py-1 rounded select-text mb-2'
+              : ''
               }`}
           >
             {product.title}
@@ -287,8 +303,8 @@ export const ProductPage: React.FC = () => {
             onBlur={(e) => handleUpdate('description', e.currentTarget.textContent || '')}
             suppressContentEditableWarning
             className={`text-sm text-app-text/80 leading-relaxed font-light transition-all ${editMode
-                ? 'bg-white/5 outline-dashed outline-1 outline-app-accent/50 p-3 rounded select-text'
-                : ''
+              ? 'bg-white/5 outline-dashed outline-1 outline-app-accent/50 p-3 rounded select-text'
+              : ''
               }`}
           >
             {product.description}
