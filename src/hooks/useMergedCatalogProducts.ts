@@ -22,7 +22,7 @@ export function useMergedCatalogProducts() {
   const setCategories = useProductStore((s) => s.setCategories);
   const storeProducts = useProductStore((s) => s.products);
 
-  const { data: remoteList, isLoading, isFetching, isSuccess, isError } = useQuery<Product[], Error>({
+  const { data: remoteList, isLoading, isFetching, isSuccess } = useQuery<Product[], Error>({
     queryKey: queryKeys.products,
     queryFn: async (): Promise<Product[]> => api.products.list(),
     staleTime: 5_000,
