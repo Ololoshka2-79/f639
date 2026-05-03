@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef as _useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
@@ -7,7 +7,7 @@ import { CheckoutHeader } from '../components/checkout/CheckoutHeader';
 import { ContactStep } from '../components/checkout/ContactStep';
 import { DeliveryStep } from '../components/checkout/DeliveryStep';
 import { SummaryStep } from '../components/checkout/SummaryStep';
-import { OrderSuccess } from '../components/payment/OrderSuccess';
+
 import { useCheckoutStore, CHECKOUT_TOTAL_STEPS } from '../store/checkoutStore';
 import { useCartStore } from '../store/cartStore';
 import { useProductStore } from '../store/productStore';
@@ -56,10 +56,10 @@ export const CheckoutPage: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
-  const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
-  const [successItemsCount, setSuccessItemsCount] = useState(0);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-  const hasTrackedCheckout = React.useRef(false);
+  const [successOrderId, _setSuccessOrderId] = useState<string | null>(null);
+  const [successItemsCount, _setSuccessItemsCount] = useState(0);
+  const hasTrackedCheckout = _useRef(false);
 
   useEffect(() => {
     if (!hasTrackedCheckout.current && checkoutItems.length > 0) {
@@ -161,8 +161,8 @@ export const CheckoutPage: React.FC = () => {
       } else {
         clearCart();
       }
-      setSuccessOrderId(orderId);
-      setSuccessItemsCount(itemCount);
+      _setSuccessOrderId(orderId);
+      _setSuccessItemsCount(itemCount);
       haptics.success();
 
       // Показываем кастомный попап вместо редиректа на OrderSuccess
@@ -182,12 +182,6 @@ export const CheckoutPage: React.FC = () => {
       haptics.impactLight();
       window.scrollTo(0, 0);
     }
-  };
-
-  const handleContinueAfterSuccess = () => {
-    clearBuyNowItem();
-    resetCheckout();
-    navigate('/');
   };
 
   const handleCloseSuccessPopup = useCallback(() => {
