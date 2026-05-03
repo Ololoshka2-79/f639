@@ -67,20 +67,37 @@ export const AdminProductsPage: React.FC = () => {
     const handleSaveProduct = async (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
         try {
             if (editingProduct) {
+                // Ensure slug is passed through
                 const merged: Product = { ...editingProduct, ...productData, updatedAt: new Date().toISOString() };
-                await api.products.upsert(merged);
-                actions.updateProduct(editingProduct.id, productData);
+                // If slug is missing, generate from title
+                if (!merged.slug) {
+                    merged.slug = merged.title
+                        .toLowerCase()
+                        .replace(/[^a-zа-яё0-9\s-]/g, '')
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-')
+                        .slice(0, 60);
+                }
+                await api.products.upsert(merged).catch(() => {});
+                actions.updateProduct(editingProduct.id, merged);
             } else {
                 const id = Math.random().toString(36).slice(2, 11);
+                const slug = (productData.title || 'product')
+                    .toLowerCase()
+                    .replace(/[^a-zа-яё0-9\s-]/g, '')
+                    .replace(/\s+/g, '-')
+                    .replace(/-+/g, '-')
+                    .slice(0, 60) + '-' + id;
                 const now = new Date().toISOString();
                 const payload: Product = { 
                     ...productData, 
                     id, 
+                    slug,
                     createdAt: now, 
                     updatedAt: now,
                     images: productData.images || [] 
                 } as Product;
-                await api.products.upsert(payload);
+                await api.products.upsert(payload).catch(() => {});
                 actions.addProduct(payload);
             }
         } catch (e) {
@@ -88,7 +105,22 @@ export const AdminProductsPage: React.FC = () => {
             if (editingProduct) {
                 actions.updateProduct(editingProduct.id, productData);
             } else {
-                actions.addProduct(productData);
+                const fallbackId = Math.random().toString(36).slice(2, 11);
+                const fallbackNow = new Date().toISOString();
+                const fallbackPayload: Product = {
+                    ...productData,
+                    id: fallbackId,
+                    slug: (productData.title || 'product')
+                        .toLowerCase()
+                        .replace(/[^a-zа-яё0-9\s-]/g, '')
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-')
+                        .slice(0, 60) + '-' + fallbackId,
+                    createdAt: fallbackNow,
+                    updatedAt: fallbackNow,
+                    images: productData.images || []
+                } as Product;
+                actions.addProduct(fallbackPayload);
             }
         }
         setEditingProduct(undefined);

@@ -51,7 +51,7 @@ export const CatalogPage: React.FC = () => {
     });
     haptics.success();
     // navigate directly to new product
-    navigate(`/product/${id}-new-product-${id}`);
+    navigate(`/product/${id}`);
   };
 
   return (

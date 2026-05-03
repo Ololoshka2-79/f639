@@ -176,7 +176,8 @@ export const ProductEditorModal: FC<ProductEditorModalProps> = ({
       haptics.error();
       return;
     }
-    if (!formData.image.trim()) {
+    const coverImage = formData.images?.[0]?.url?.trim();
+    if (!coverImage) {
       setSaveError('Добавьте главное фото товара.');
       haptics.error();
       return;

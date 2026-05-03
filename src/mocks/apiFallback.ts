@@ -11,10 +11,8 @@ export function getFallbackProductsList(params: { category?: string }): Product[
   );
 }
 
-export function getFallbackProductById(idOrSlug: string): Product {
-  return (
-    PRODUCTS.find((p) => p.id === idOrSlug || p.slug === idOrSlug) ?? PRODUCTS[0]
-  );
+export function getFallbackProductById(idOrSlug: string): Product | undefined {
+  return PRODUCTS.find((p) => p.id === idOrSlug || p.slug === idOrSlug);
 }
 
 export function getFallbackRelated(excludeId: string): Product[] {

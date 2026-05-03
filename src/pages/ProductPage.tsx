@@ -35,22 +35,19 @@ export const ProductPage: React.FC = () => {
       navigate('/', { replace: true });
     }
   };
-  const idPart = idSlug?.split('-')[0] ?? '';
-  const slug = idSlug?.split('-').slice(1).join('-') ?? '';
+  const productId = idSlug ?? '';
 
   const storeProduct = useProductStore((s) => {
-    const bySlug = slug && s.products.find((p) => p.slug === slug);
-    if (bySlug) return bySlug;
-    return s.products.find((p) => p.id === idPart);
+    return s.products.find((p) => p.id === productId);
   });
   const { updateProduct, removeProduct } = useProductStore();
   const { customBadgeLabels } = useUIStore();
   const [selectedSize, setSelectedSize] = useState<string | undefined>();
 
   const { data: remoteProduct, isLoading } = useQuery({
-    queryKey: queryKeys.product(idPart),
-    queryFn: () => api.products.get(idPart),
-    enabled: !!idPart,
+    queryKey: queryKeys.product(productId),
+    queryFn: () => api.products.get(productId),
+    enabled: !!productId,
     retry: 0,
   });
 

@@ -52,14 +52,14 @@ function normalizeUploadError(error: unknown): string {
 
 function resolveUploadBaseUrl(): string {
   const explicit = (import.meta.env.VITE_UPLOAD_BASE_URL || '').trim();
-  if (explicit) return explicit.replace(/\/$/, '');
+  if (explicit) return explicit.replace(/\/+$/, '');
 
   const host = window.location.hostname;
   if (host === 'localhost' || host === '127.0.0.1') {
     return 'http://localhost:8787';
   }
 
-  const apiBase = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/$/, '');
+  const apiBase = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
   if (!apiBase) {
     return '';
   }
@@ -67,20 +67,40 @@ function resolveUploadBaseUrl(): string {
 }
 
 function resolveUploadCandidates(): string[] {
-  const explicit = (import.meta.env.VITE_UPLOAD_BASE_URL || '').trim();
-  const apiBase = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/$/, '');
-  const fallback = resolveUploadBaseUrl();
-  const values = [
-    explicit,
-    apiBase ? `${apiBase}/upload` : '',
-    apiBase ? `${apiBase.replace(/\/v1$/i, '')}/upload` : '',
-    fallback ? `${fallback}/upload` : '',
-    '/upload',
-    '/v1/upload'
-  ]
-    .map((s) => s.replace(/\/{2,}/g, '/').replace('https:/', 'https://').replace('http:/', 'http://'))
-    .filter(Boolean);
-  return Array.from(new Set(values));
+  const explicit = (import.meta.env.VITE_UPLOAD_BASE_URL || '').trim().replace(/\/+$/, '');
+  const apiBase = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+  const candidates = new Set<string>();
+
+  if (explicit) {
+    if (explicit.includes('/upload')) {
+      candidates.add(explicit);
+    } else {
+      candidates.add(`${explicit}/upload`);
+    }
+  }
+
+  if (apiBase) {
+    if (apiBase.includes('/upload')) {
+      candidates.add(apiBase);
+    } else {
+      candidates.add(`${apiBase}/upload`);
+    }
+  }
+
+  // Relative fallback
+  candidates.add('/upload');
+
+  // Remove duplicates without mangling protocol
+  return Array.from(candidates).map((url) => {
+    // Fix double slashes ONLY in path (after protocol://)
+    const protocolEnd = url.indexOf('://');
+    if (protocolEnd !== -1) {
+      const protocol = url.slice(0, protocolEnd + 3);
+      const path = url.slice(protocolEnd + 3).replace(/\/{2,}/g, '/');
+      return protocol + path;
+    }
+    return url;
+  });
 }
 
 function handleFallback<T>(err: unknown, fallback: () => T): T {
@@ -116,7 +136,11 @@ export const api = {
         const response = await apiClient.get<Product>(`/products/${id}`);
         return response.data;
       } catch (err) {
-        return handleFallback(err, () => getFallbackProductById(id));
+        const fallback = getFallbackProductById(id);
+        if (!fallback) {
+          throw err;
+        }
+        return fallback;
       }
     },
     get: async (id: string) => {
@@ -131,11 +155,21 @@ export const api = {
       }
     },
     upsert: async (product: Product) => {
-      const response = await apiClient.post<Product>('/products', product);
-      return response.data;
+      try {
+        const response = await apiClient.post<Product>('/products', product);
+        return response.data;
+      } catch (err) {
+        console.warn('[API] upsert failed, product saved locally only', err);
+        throw err;
+      }
     },
     remove: async (id: string) => {
-      await apiClient.delete(`/product/${id}`);
+      try {
+        await apiClient.delete(`/products/${id}`);
+      } catch (err) {
+        console.warn('[API] remove failed, product removed locally only', err);
+        throw err;
+      }
     },
   },
   admin: {

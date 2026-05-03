@@ -4,7 +4,8 @@ import cors from 'cors';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Readable } from 'node:stream';
-import { cloudinary } from './cloudinary.js';
+import { promises as fs } from 'node:fs';
+import { cloudinary, enabled as cloudinaryEnabled } from './cloudinary.js';
 import { requireAdmin } from './requireAdmin.js';
 import { config, validateConfig } from './config.js';
 import {
@@ -36,11 +37,34 @@ app.use(
       if (config.allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
+      // Разрешаем Telegram WebApp origins (все возможные домены Mini Apps)
+      const allowedDomains = [
+        '.telegram.org',
+        '.t.me',
+        '.telegramweb.app',     // <-- НОВЫЙ домен Mini Apps Telegram
+        '.tgwebapp.com',
+        'localhost',
+        '127.0.0.1',
+        '.vercel.app',          // <-- для Vercel деплоя
+        '.netlify.app',         // <-- для Netlify деплоя
+        '.railway.app',         // <-- для Railway деплоя
+      ];
+      const isAllowed = allowedDomains.some((domain) => {
+        if (origin === domain) return true;
+        if (origin.includes(domain)) return true;  // substr check
+        if (origin.endsWith(domain)) return true;
+        return false;
+      });
+      if (isAllowed) {
+        return callback(null, true);
+      }
       console.warn(`[CORS] Blocked origin: ${origin}`);
       return callback(new Error('Not allowed by CORS'));
     },
-    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'x-telegram-init-data', 'x-tg-init-data'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'x-telegram-init-data', 'x-tg-init-data', 'Accept'],
+    credentials: true,
+    maxAge: 86400,             // <-- Кешируем preflight на 24 часа
   })
 );
 app.use(express.json({ limit: '2mb' }));
@@ -57,17 +81,35 @@ const upload = multer({
   },
 });
 
-function uploadBufferToCloudinary(fileBuffer, folder) {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: 'image' },
-      (error, result) => {
-        if (error) return reject(error);
-        return resolve(result);
-      }
-    );
-    Readable.from(fileBuffer).pipe(stream);
-  });
+const uploadsDir = path.join(__dirname, '../uploads');
+
+async function ensureUploadsDir() {
+  try { await fs.access(uploadsDir); }
+  catch { await fs.mkdir(uploadsDir, { recursive: true }); }
+}
+
+async function uploadBuffer(fileBuffer, folder) {
+  if (cloudinaryEnabled) {
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder, resource_type: 'image' },
+        (error, result) => {
+          if (error) return reject(error);
+          return resolve(result);
+        }
+      );
+      Readable.from(fileBuffer).pipe(stream);
+    });
+  }
+  // Fallback: local file system
+  await ensureUploadsDir();
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
+  const filepath = path.join(uploadsDir, filename);
+  await fs.writeFile(filepath, fileBuffer);
+  return {
+    secure_url: `/uploads/${filename}`,
+    public_id: `local_${filename}`,
+  };
 }
 
 app.get('/health', (_req, res) => {
@@ -76,6 +118,14 @@ app.get('/health', (_req, res) => {
 app.get('/products', async (_req, res) => {
   const products = await listProducts();
   res.json(products);
+});
+
+app.get('/products/:id', async (req, res) => {
+  const product = await getProductById(req.params.id);
+  if (!product) {
+    return res.status(404).json({ message: 'Product not found' });
+  }
+  res.json(product);
 });
 
 app.post('/products', requireAdmin, async (req, res) => {
@@ -94,7 +144,7 @@ app.post('/upload', requireAdmin, upload.single('file'), async (req, res) => {
   }
 
   try {
-    const result = await uploadBufferToCloudinary(req.file.buffer, 'products');
+    const result = await uploadBuffer(req.file.buffer, 'products');
     return res.json({
       url: result.secure_url,
       public_id: result.public_id,
@@ -105,9 +155,9 @@ app.post('/upload', requireAdmin, upload.single('file'), async (req, res) => {
   }
 });
 
-app.delete('/product/:id', requireAdmin, async (req, res) => {
+app.delete('/products/:id', requireAdmin, async (req, res) => {
   const productId = req.params.id;
-  console.log(`[DELETE /product/${productId}] Attempting to delete product`);
+  console.log(`[DELETE /products/${productId}] Attempting to delete product`);
   const product = await getProductById(productId);
 
   if (!product) {
@@ -133,7 +183,7 @@ app.delete('/product/:id', requireAdmin, async (req, res) => {
   }
 
   await removeProductById(productId);
-  console.log(`[DELETE /product/${productId}] Successfully deleted`);
+  console.log(`[DELETE /products/${productId}] Successfully deleted`);
   return res.status(204).send();
 });
 
@@ -241,6 +291,9 @@ app.use((error, _req, res, _next) => {
   console.error('[server] unhandled error', error);
   return res.status(500).json({ message: 'Internal server error' });
 });
+
+// Serve uploaded files
+app.use('/uploads', express.static(uploadsDir));
 
 // Serve static files from the React app
 app.use(express.static(distPath));
