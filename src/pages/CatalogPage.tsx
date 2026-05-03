@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SlidersHorizontal, Plus, PackagePlus, X } from 'lucide-react';
+import { SlidersHorizontal, Plus, X } from 'lucide-react';
 import { useCatalogStore } from '../store/catalogStore';
 import { ProductGrid } from '../components/catalog/ProductGrid';
 import { FilterModal } from '../components/catalog/FilterModal';
@@ -8,13 +8,14 @@ import { useHaptics } from '../hooks/useHaptics';
 import { useAdminStore } from '../store/adminStore';
 import { useUIStore } from '../store/uiStore';
 import { useProductStore } from '../store/productStore';
+import { api } from '../lib/api/endpoints';
 
 export const CatalogPage: React.FC = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const { selectedCategory, setSelectedCategory, searchQuery } = useCatalogStore();
   const { editMode } = useAdminStore();
   const { categoryNames, setCategoryName } = useUIStore();
-  const { categories, addCategory, addProduct, removeCategory } = useProductStore();
+  const { categories, addCategory, removeCategory, products, removeProduct } = useProductStore();
   const haptics = useHaptics();
   const location = useLocation();
   const navigate = useNavigate();
@@ -31,29 +32,6 @@ export const CatalogPage: React.FC = () => {
     haptics.success();
   };
 
-  const handleAddProduct = () => {
-    const id = Math.random().toString(36).substr(2, 9);
-    addProduct({
-        title: 'Новое изделие',
-        slug: `new-product-${id}`,
-        description: '',
-        price: 0,
-        categoryId: selectedCategory || categories[0]?.id || '1',
-        image: 'https://images.unsplash.com/photo-1605100804763-247f66156ce4?auto=format&fit=crop&q=80',
-        gallery: [],
-        images: [{ url: 'https://images.unsplash.com/photo-1605100804763-247f66156ce4?auto=format&fit=crop&q=80', public_id: '', order: 0 }],
-        material: 'Золото',
-        inStock: true,
-        isNew: true,
-        isBestSeller: false,
-        isOnSale: false,
-        isHidden: false
-    });
-    haptics.success();
-    // navigate directly to new product
-    navigate(`/product/${id}`);
-  };
-
   return (
     <div className="min-h-screen pb-32 pt-6">
       <header className="px-6 mb-8 flex items-center justify-between">
@@ -61,15 +39,6 @@ export const CatalogPage: React.FC = () => {
           {isFavorites ? 'Избранное' : 'Каталог'}
         </h2>
         <div className="flex items-center gap-2">
-          {editMode && !isFavorites && (
-            <button 
-              onClick={handleAddProduct}
-              className="p-3 rounded-2xl bg-app-accent text-app-bg shadow-lg active:scale-95 transition-all flex items-center gap-2"
-            >
-              <PackagePlus size={20} />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Товар</span>
-            </button>
-          )}
           <button 
             onClick={() => { setIsFilterOpen(true); haptics.impactLight(); }}
             className="relative p-3 rounded-2xl bg-app-surface-1 border border-app-border text-app-accent hover:bg-app-accent/5 transition-all"
@@ -114,9 +83,15 @@ export const CatalogPage: React.FC = () => {
               </button>
               {editMode && (
                 <button
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.stopPropagation();
-                    if(window.confirm('Delete category?')) {
+                    if(window.confirm('Удалить категорию и все товары в ней?')) {
+                      const catProducts = products.filter(p => p.categoryId === cat.id);
+                      // Удаляем товары категории через API и store
+                      for (const p of catProducts) {
+                        try { await api.products.remove(p.id); } catch {}
+                        removeProduct(p.id);
+                      }
                       removeCategory(cat.id);
                       if (selectedCategory === cat.id) setSelectedCategory(null);
                     }

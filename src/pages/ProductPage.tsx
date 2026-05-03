@@ -38,8 +38,16 @@ export const ProductPage: React.FC = () => {
   const productId = idSlug ?? '';
 
   const storeProduct = useProductStore((s) => {
-    // Поиск по ID или slug для поддержки обоих типов URL
-    return s.products.find((p) => p.id === productId || p.slug === productId);
+    // Поиск: точное совпадение id/slug, затем поиск по префиксу (idSlug = "id-...")
+    let found = s.products.find((p) => p.id === productId || p.slug === productId);
+    if (!found && productId) {
+      found = s.products.find((p) => productId.startsWith(p.id + '-') || productId.startsWith(p.id + '_'));
+    }
+    // Fallback: поиск где id содержится в idSlug (для обратной совместимости)
+    if (!found && productId) {
+      found = s.products.find((p) => p.id.length >= 6 && productId.includes(p.id));
+    }
+    return found;
   });
   const { updateProduct, removeProduct } = useProductStore();
   const { customBadgeLabels } = useUIStore();
