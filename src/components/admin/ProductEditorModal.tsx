@@ -132,6 +132,61 @@ export const ProductEditorModal: FC<ProductEditorModalProps> = ({
     });
   };
 
+  /** Compress image client-side before upload to stay under Cloudinary 10 MB free-tier limit */
+  const compressImage = (file: File, maxBytes: number): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      if (file.size <= maxBytes) {
+        return resolve(file);
+      }
+
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const MAX_WIDTH = 1920;
+        const MAX_HEIGHT = 1920;
+        let { width, height } = img;
+
+        if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+          if (width > height) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          } else {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          URL.revokeObjectURL(url);
+          return reject(new Error('Canvas context unavailable'));
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              // fallback to original
+              resolve(file);
+            }
+          },
+          'image/jpeg',
+          0.75,
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(file); // fallback to original on error
+      };
+      img.src = url;
+    });
+  };
+
   const handlePickPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files?.length) return;
@@ -139,9 +194,18 @@ export const ProductEditorModal: FC<ProductEditorModalProps> = ({
     setSaveError(null);
     setIsUploadingImages(true);
     try {
-      console.log(`[Admin] Uploading ${files.length} images...`);
+      const CLOUDINARY_MAX = 9 * 1024 * 1024; // 9 MB with safety margin under 10 MB limit
+      console.log(`[Admin] Compressing & uploading ${files.length} images...`);
+      const compressed = await Promise.all(
+        Array.from(files).map((file) => compressImage(file, CLOUDINARY_MAX))
+      );
       const uploaded = await Promise.all(
-        Array.from(files).map((file) => api.admin.uploadImage(file))
+        compressed.map((blob) => {
+          const compressedFile = new File([blob], blob instanceof File ? blob.name : 'photo.jpg', {
+            type: 'image/jpeg',
+          });
+          return api.admin.uploadImage(compressedFile);
+        })
       );
       setFormData((prev) => {
         let nextImages = [...prev.images, ...uploaded.map(item => ({ url: item.url, public_id: item.public_id, order: 0 }))];
