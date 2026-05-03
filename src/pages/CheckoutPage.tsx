@@ -117,8 +117,6 @@ export const CheckoutPage: React.FC = () => {
     setIsSubmitting(true);
     haptics.impactMedium();
 
-    const itemCount = checkoutItems.length;
-
     try {
       const orderData = {
         items: checkoutItems.map((item) => ({
