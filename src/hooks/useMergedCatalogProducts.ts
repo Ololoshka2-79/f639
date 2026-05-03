@@ -4,6 +4,7 @@ import { api } from '../lib/api/endpoints';
 import { queryKeys } from '../lib/queryKeys';
 import { useProductStore } from '../store/productStore';
 import { CATEGORIES } from '../mocks/data';
+import type { Product } from '../types';
 
 /**
  * ЕДИНЫЙ ИСТОЧНИК ПРАВДЫ для каталога товаров.
@@ -22,9 +23,9 @@ export function useMergedCatalogProducts() {
   const setCategories = useProductStore((s) => s.setCategories);
   const initialized = useRef(false);
 
-  const { data: remoteList, isLoading, isFetching } = useQuery({
+  const { data: remoteList, isLoading, isFetching } = useQuery<Product[], Error>({
     queryKey: queryKeys.products,
-    queryFn: () => api.products.list(),
+    queryFn: async (): Promise<Product[]> => api.products.list(),
     staleTime: 5_000, // 5 sec — быстрая синхронизация между ВСЕМИ пользователями
     retry: 2,
     // НЕ используем моки. Если API не отвечает — показываем то, что есть в store.
@@ -56,9 +57,10 @@ export function useMergedCatalogProducts() {
 
   // Возвращаем ТОЛЬКО данные из API (React Query).
   // Никаких смешиваний с localStorage или моками.
+  const list = remoteList as Product[] | undefined;
   return {
     products: remoteList ?? [],
-    isLoading: isLoading && (remoteList === undefined || remoteList.length === 0),
+    isLoading: isLoading && (!list || list.length === 0),
     isFetching,
   };
 }

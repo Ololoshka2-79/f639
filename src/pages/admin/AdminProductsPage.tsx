@@ -20,7 +20,7 @@ export const AdminProductsPage: React.FC = () => {
 
     // ЕДИНЫЙ источник данных — API через React Query.
     // Все пользователи (админы и обычные) видят одни и те же товары.
-    const { products: allProducts, isLoading } = useMergedCatalogProducts();
+    const { products: allProducts } = useMergedCatalogProducts();
 
     // Zustand store — ТОЛЬКО для optimistic UI при CRUD (categories + быстрые мутации).
     // Данные ПОЛНОСТЬЮ перезаписываются из API при каждом ответе (useEffect в хуке).
