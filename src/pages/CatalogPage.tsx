@@ -3,7 +3,7 @@ import { SlidersHorizontal, Plus, X } from 'lucide-react';
 import { useCatalogStore } from '../store/catalogStore';
 import { ProductGrid } from '../components/catalog/ProductGrid';
 import { FilterModal } from '../components/catalog/FilterModal';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useHaptics } from '../hooks/useHaptics';
 import { useAdminStore } from '../store/adminStore';
 import { useUIStore } from '../store/uiStore';
@@ -18,7 +18,6 @@ export const CatalogPage: React.FC = () => {
   const { categories, addCategory, removeCategory, products, removeProduct } = useProductStore();
   const haptics = useHaptics();
   const location = useLocation();
-  const navigate = useNavigate();
   const isFavorites = location.pathname === '/favorites';
 
   const handleCategorySelect = (id: string | null) => {
