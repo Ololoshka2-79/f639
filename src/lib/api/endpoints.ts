@@ -138,22 +138,14 @@ export const api = {
         return handleFallback(err, () => getFallbackRelated(id));
       }
     },
+    /** Admin: create or update. NEVER falls back to mocks — errors propagate to admin UI. */
     upsert: async (product: Product) => {
-      try {
-        const response = await apiClient.post<Product>('/products', product);
-        return response.data;
-      } catch (err) {
-        console.warn('[API] upsert failed, product saved locally only', err);
-        throw err;
-      }
+      const response = await apiClient.post<Product>('/products', product);
+      return response.data;
     },
+    /** Admin: delete. NEVER falls back to mocks — errors propagate to admin UI. */
     remove: async (id: string) => {
-      try {
-        await apiClient.delete(`/products/${id}`);
-      } catch (err) {
-        console.warn('[API] remove failed, product removed locally only', err);
-        throw err;
-      }
+      await apiClient.delete(`/products/${id}`);
     },
   },
   admin: {

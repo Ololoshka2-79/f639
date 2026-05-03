@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { PRODUCTS, CATEGORIES } from '../mocks/data';
 import type { Product, Category } from '../types';
 import { persist } from 'zustand/middleware';
 
@@ -21,8 +20,8 @@ interface ProductStore {
 export const useProductStore = create<ProductStore>()(
   persist(
     (set) => ({
-      products: PRODUCTS,
-      categories: CATEGORIES,
+      products: [],
+      categories: [],
       setProducts: (products) => set({ products }),
       setCategories: (categories) => set({ categories }),
       updateProduct: (id, updates) => set((state) => ({

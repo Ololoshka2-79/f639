@@ -38,7 +38,8 @@ export const ProductPage: React.FC = () => {
   const productId = idSlug ?? '';
 
   const storeProduct = useProductStore((s) => {
-    return s.products.find((p) => p.id === productId);
+    // Поиск по ID или slug для поддержки обоих типов URL
+    return s.products.find((p) => p.id === productId || p.slug === productId);
   });
   const { updateProduct, removeProduct } = useProductStore();
   const { customBadgeLabels } = useUIStore();

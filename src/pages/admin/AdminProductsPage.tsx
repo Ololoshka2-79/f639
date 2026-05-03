@@ -52,76 +52,62 @@ export const AdminProductsPage: React.FC = () => {
 
     const confirmDelete = async () => {
         if (!deletingProduct) return;
-        try {
-            await api.products.remove(deletingProduct.id);
-            actions.removeProduct(deletingProduct.id);
-        } catch (e) {
-            console.error(e);
-            // Keep admin UX resilient even when backend is unavailable
-            actions.removeProduct(deletingProduct.id);
-        }
+        // Удаляем локально в store сразу — UX должен быть отзывчивым
+        actions.removeProduct(deletingProduct.id);
+        // Отправляем запрос на сервер, но не ждём его для закрытия модалки
+        api.products.remove(deletingProduct.id).catch((e) => {
+            console.warn('[Admin] Server delete failed, item removed locally:', e);
+        });
         setDeletingProduct(undefined);
         setIsDeleteOpen(false);
     };
 
     const handleSaveProduct = async (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
-        try {
-            if (editingProduct) {
-                // Ensure slug is passed through
-                const merged: Product = { ...editingProduct, ...productData, updatedAt: new Date().toISOString() };
-                // If slug is missing, generate from title
-                if (!merged.slug) {
-                    merged.slug = merged.title
-                        .toLowerCase()
-                        .replace(/[^a-zа-яё0-9\s-]/g, '')
-                        .replace(/\s+/g, '-')
-                        .replace(/-+/g, '-')
-                        .slice(0, 60);
-                }
-                await api.products.upsert(merged).catch(() => {});
-                actions.updateProduct(editingProduct.id, merged);
-            } else {
-                const id = Math.random().toString(36).slice(2, 11);
-                const slug = (productData.title || 'product')
+        if (editingProduct) {
+            // Редактирование существующего товара
+            const merged: Product = { 
+                ...editingProduct, 
+                ...productData, 
+                updatedAt: new Date().toISOString() 
+            };
+            if (!merged.slug) {
+                merged.slug = merged.title
                     .toLowerCase()
                     .replace(/[^a-zа-яё0-9\s-]/g, '')
                     .replace(/\s+/g, '-')
                     .replace(/-+/g, '-')
-                    .slice(0, 60) + '-' + id;
-                const now = new Date().toISOString();
-                const payload: Product = { 
-                    ...productData, 
-                    id, 
-                    slug,
-                    createdAt: now, 
-                    updatedAt: now,
-                    images: productData.images || [] 
-                } as Product;
-                await api.products.upsert(payload).catch(() => {});
-                actions.addProduct(payload);
+                    .slice(0, 60);
             }
-        } catch (e) {
-            console.error(e);
-            if (editingProduct) {
-                actions.updateProduct(editingProduct.id, productData);
-            } else {
-                const fallbackId = Math.random().toString(36).slice(2, 11);
-                const fallbackNow = new Date().toISOString();
-                const fallbackPayload: Product = {
-                    ...productData,
-                    id: fallbackId,
-                    slug: (productData.title || 'product')
-                        .toLowerCase()
-                        .replace(/[^a-zа-яё0-9\s-]/g, '')
-                        .replace(/\s+/g, '-')
-                        .replace(/-+/g, '-')
-                        .slice(0, 60) + '-' + fallbackId,
-                    createdAt: fallbackNow,
-                    updatedAt: fallbackNow,
-                    images: productData.images || []
-                } as Product;
-                actions.addProduct(fallbackPayload);
-            }
+            // Сначала обновляем локально — UX
+            actions.updateProduct(editingProduct.id, merged);
+            // Затем отправляем на сервер (не блокируем UI)
+            api.products.upsert(merged).catch((e) => {
+                console.warn('[Admin] Server upsert failed, item saved locally:', e);
+            });
+        } else {
+            // Создание нового товара
+            const id = Math.random().toString(36).slice(2, 11);
+            const slug = (productData.title || 'product')
+                .toLowerCase()
+                .replace(/[^a-zа-яё0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .slice(0, 60) + '-' + id;
+            const now = new Date().toISOString();
+            const payload: Product = { 
+                ...productData, 
+                id, 
+                slug,
+                createdAt: now, 
+                updatedAt: now,
+                images: productData.images || [] 
+            } as Product;
+            // Сначала добавляем локально — мгновенный UX
+            actions.addProduct(payload);
+            // Затем отправляем на сервер (не блокируем UI)
+            api.products.upsert(payload).catch((e) => {
+                console.warn('[Admin] Server create failed, product saved locally:', e);
+            });
         }
         setEditingProduct(undefined);
         setIsEditorOpen(false);

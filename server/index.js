@@ -67,11 +67,14 @@ app.use(
     maxAge: 86400,             // <-- Кешируем preflight на 24 часа
   })
 );
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '50mb' }));
+
+// Увеличено с 5MB до 15MB для современных мобильных фото
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: MAX_FILE_SIZE },
   fileFilter: (_req, file, cb) => {
     if (!file.mimetype?.startsWith('image/')) {
       cb(new Error('Only image files are allowed'));
@@ -120,8 +123,22 @@ app.get('/products', async (_req, res) => {
   res.json(products);
 });
 
+app.get('/products/by-slug/:slug', async (req, res) => {
+  const products = await listProducts();
+  const product = products.find((p) => p.slug === req.params.slug);
+  if (!product) {
+    return res.status(404).json({ message: 'Product not found' });
+  }
+  res.json(product);
+});
+
 app.get('/products/:id', async (req, res) => {
-  const product = await getProductById(req.params.id);
+  // Try to find by ID first, then by slug
+  let product = await getProductById(req.params.id);
+  if (!product) {
+    const products = await listProducts();
+    product = products.find((p) => p.slug === req.params.id) || null;
+  }
   if (!product) {
     return res.status(404).json({ message: 'Product not found' });
   }
@@ -184,7 +201,7 @@ app.delete('/products/:id', requireAdmin, async (req, res) => {
 
   await removeProductById(productId);
   console.log(`[DELETE /products/${productId}] Successfully deleted`);
-  return res.status(204).send();
+  return res.status(200).json({ deleted: true });
 });
 
 // --- Order Endpoints ---
@@ -283,7 +300,7 @@ app.post('/settings', requireAdmin, async (req, res) => {
 
 app.use((error, _req, res, _next) => {
   if (error?.code === 'LIMIT_FILE_SIZE' || error?.message?.includes('File too large')) {
-    return res.status(413).json({ message: 'File is too large. Max size is 5MB' });
+    return res.status(413).json({ message: `File is too large. Max size is ${MAX_FILE_SIZE / 1024 / 1024}MB` });
   }
   if (error?.message?.includes('Only image files')) {
     return res.status(400).json({ message: 'Only image files are allowed' });
@@ -312,6 +329,7 @@ try {
     console.log(`🚀 [server] Started successfully!`);
     console.log(`📡 Listening on: 0.0.0.0:${port}`);
     console.log(`👉 Health check: http://localhost:${port}/health`);
+    console.log(`📸 Max upload size: ${MAX_FILE_SIZE / 1024 / 1024}MB`);
     console.log('=========================================');
   });
 } catch (error) {
