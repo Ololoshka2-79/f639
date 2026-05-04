@@ -8,7 +8,6 @@ import { useHaptics } from '../hooks/useHaptics';
 import { useAdminStore } from '../store/adminStore';
 import { useUIStore } from '../store/uiStore';
 import { useProductStore } from '../store/productStore';
-import { api } from '../lib/api/endpoints';
 
 export const CatalogPage: React.FC = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);

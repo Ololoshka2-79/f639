@@ -15,7 +15,6 @@ import { useFavoritesStore } from '../store/favoritesStore';
 import { useHaptics } from '../hooks/useHaptics';
 import { useAdminStore } from '../store/adminStore';
 import { useUIStore } from '../store/uiStore';
-import type { Product } from '../types';
 import { shareInTelegram } from '../lib/telegramShare';
 
 export const ProductPage: React.FC = () => {

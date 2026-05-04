@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api/endpoints';
 import { queryKeys } from '../lib/queryKeys';
 import { useProductStore } from '../store/productStore';
