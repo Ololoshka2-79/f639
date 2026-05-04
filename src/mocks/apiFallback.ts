@@ -12,7 +12,9 @@ export function getFallbackProductsList(params: { category?: string }): Product[
 }
 
 export function getFallbackProductById(idOrSlug: string): Product | undefined {
-  return PRODUCTS.find((p) => p.id === idOrSlug || p.slug === idOrSlug);
+  // idSlug формат: "abc123-product-name". Берём только id (до первого дефиса)
+  const bareId = idOrSlug.split('-')[0];
+  return PRODUCTS.find((p) => p.id === bareId || p.id === idOrSlug || p.slug === idOrSlug);
 }
 
 export function getFallbackRelated(excludeId: string): Product[] {

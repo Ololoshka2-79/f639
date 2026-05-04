@@ -8,7 +8,7 @@ import { useMergedCatalogProducts } from '../../hooks/useMergedCatalogProducts';
 
 export const ProductGrid: React.FC = () => {
   const { searchQuery, selectedCategory, sortBy, filters } = useCatalogStore();
-  const { products: allProducts } = useMergedCatalogProducts();
+  const { data: allProducts = [] } = useMergedCatalogProducts();
   const navigate = useNavigate();
   const location = useLocation();
   const isFavorites = location.pathname === '/favorites';

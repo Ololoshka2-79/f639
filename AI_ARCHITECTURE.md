@@ -1,73 +1,93 @@
-# Архитектура и логика проекта: F 63.9 Luxury Boutique
+# Architecture Audit — 2026-05-04
 
-Данный документ описывает полную логику и структуру Telegram Mini App (TMA) магазина эксклюзивной одежды и аксессуаров.
+## Root Cause: Two Sources of Truth (Zustand + React Query)
 
-## 1. Общий обзор
-**F 63.9** — это высокопроизводительное веб-приложение, интегрированное в Telegram, с акцентом на "Luxury" эстетику. Приложение включает в себя витрину товаров, систему заказов, админ-панель с аналитикой и Telegram-бота для уведомлений.
+### Broken Architecture Point
 
-## 2. Технологический стек
-- **Frontend**: React 18, TypeScript, Vite.
-- **Styling**: Tailwind CSS + кастомные CSS-переменные для динамических тем (Light/Dark).
-- **State Management**: Zustand (с персистентностью через `localStorage`).
-- **Animations**: Framer Motion (плавные переходы, SplashScreen, микро-взаимодействия).
-- **Icons**: Lucide React.
-- **Backend**: Node.js (Express) для API + Python (aiogram) для Telegram-бота.
-- **Storage**: Локальные JSON-файлы (для простоты/резерва) + Cloudinary для хранения изображений.
+```
+                    ┌─────────────────────────┐
+                    │    Zustand Store         │
+                    │  (persist → localStorage)│
+                    │  addProduct / remove     │
+                    │  updateProduct           │
+                    └──────────┬──────────────┘
+                               │ Optimistic mutations
+                               │ (NO server confirmation)
+                               ▼
+                    ┌─────────────────────────┐
+                    │   useMergedCatalogProducts│
+                    │   (compares lengths)     │
+                    │   "whoever is bigger"    │
+                    └──────────┬──────────────┘
+                               │ returns "merged" data
+                               ▼
+                    ┌─────────────────────────┐
+                    │ Admin / Catalog / Product│
+                    │   PAGES                  │
+                    └─────────────────────────┘
 
-## 3. Файловая структура
-- `/src`: Исходный код фронтенда.
-  - `/components`: UI-компоненты (кнопки, карточки, навигация).
-  - `/features`: Основные экраны и бизнес-логика (HomeScreen, Cart).
-  - `/store`: Zustand-сторы.
-  - `/hooks`: Кастомные хуки (Haptics, API, Theme).
-  - `/lib`: Утилиты (аналитика, Telegram API, клиент API).
-- `/server`: API-сервер на Node.js.
-- `/telegram-bot`: Код бота для уведомлений и управления входами.
+                    ┌─────────────────────────┐
+                    │   React Query Cache       │
+                    │   (in-memory only)       │
+                    │   GET /products          │
+                    └──────────┬──────────────┘
+                               │ fetch on mount
+                               │ refetch on invalidate
+                               ▼
+                    ┌─────────────────────────┐
+                    │   API (server/products   │
+                    │   .json)                 │
+                    └─────────────────────────┘
+```
 
-## 4. Основная логика по слоям
+### Specific failure scenarios:
 
-### А. Интеграция с Telegram (TMA API)
-- **Инициализация**: Приложение использует `window.Telegram.WebApp` для получения данных о пользователе (`initDataUnsafe`), управления цветами темы, обработки кнопки "Назад" и виброотклика (Haptics).
-- **Deep Linking**: Обработка `start_param` (например, `product_123`) для прямого перехода на страницу товара при открытии бота.
-- **Safe Areas**: Динамическое вычисление отступов (верхняя панель и нижняя навигация) для корректного отображения на разных устройствах.
+1. **Admin creates product** → Zustand.addProduct (optimistic) → persist to localStorage → POST fails (CORS/network) → product in localStorage, NOT on server. Reload page: Zustand restores from localStorage, API returns old list. `useMergedCatalogProducts` compares: `storeLen > remoteLen` → returns **Zustand data** with fake products. Other users see old API data.
 
-### Б. Управление состоянием (Zustand)
-1. **`cartStore`**: 
-   - Хранит массив `items` (продукт, размер, количество).
-   - Автоматически пересчитывает `total`.
-   - Синхронизируется с `localStorage` (`f639-cart-storage`).
-2. **`uiStore`**: 
-   - Управляет глобальными настройками UI (заголовки, баннеры, состояние SplashScreen).
-3. **`adminStore`**: 
-   - Проверяет `user.id` из Telegram против списка разрешенных ID для активации режима редактирования и доступа к аналитике.
-4. **`analyticsStore`**: 
-   - Собирает события: `view_product`, `add_to_cart`, `create_order`.
-   - Данные используются для расчета популярности товаров на главном экране.
+2. **Admin updates product** → Zustand.updateProduct → persist → POST succeeds → invalidateQueries → API refetch returns updated list → `storeLen === remoteLen` → **no sync** → Zustand still has old data for some fields. Race condition between Zustand and API.
 
-### В. Система товаров и Кастомизация
-- **Каталог**: Товары подгружаются из API (`/v1/products`).
-- **Мерж данных**: Приложение может комбинировать статические данные из файлов с динамическими данными с сервера.
-- **Популярность**: Алгоритм сортировки на главном экране учитывает веса событий (просмотр = 1, корзина = 2, покупка = 5).
+3. **Admin deletes product** → Zustand.removeProduct → persist → DELETE succeeds → invalidateQueries → API returns list WITHOUT deleted product → `remoteLen < storeLen` → **falls to else** → **no sync** → deleted product re-appears in Zustand. Admin sees "ghost" products.
 
-### Г. Оформление заказа
-1. Пользователь выбирает товар и размер.
-2. Товар попадает в `cartStore`.
-3. На экране Checkout собираются контактные данные.
-4. Отправляется POST-запрос на сервер, который:
-   - Сохраняет заказ.
-   - Отправляет уведомление админу через Telegram-бот.
+4. **Cross-client sync**: Admin creates product on machine A → persists to localStorage[A]. User on machine B loads page → React Query fetches from API → gets updated list → shows correctly. BUT Admin on machine A, after N creates, has stale data in Zustand → `useMergedCatalogProducts` returns Zustand (which is larger) → Admin sees WRONG data.
 
-### Д. Админ-панель и Аналитика
-- Доступна только пользователям из `ADMIN_IDS`.
-- Позволяет редактировать тексты прямо на страницах (Inline Editing) и просматривать графики активности пользователей в разделе `/admin/analytics`.
+### Impact:
+- Admin CRUD appears to work locally, but changes are NOT propagated to other users
+- On page refresh, admin may see phantom products or stale data
+- User sees SERVER data (correct, but incomplete if admin thinks changes went through)
+- No single source of truth — two competing caches
 
-## 5. Эстетика и UX
-- **Шрифты**: Использование `Bodoni Moda` для заголовков (премиальный вид).
-- **Тема**: Автоматическая подстройка под тему Telegram (темная/светлая).
-- **Сплэш-скрин**: Анимированное сердце (логотип) с неоновым свечением при запуске.
+## Fix Plan (P0-P2)
 
-## 6. Развертывание
-- Проект настроен для **Railway**:
-  - Web App (Node.js) обслуживает статику и API.
-  - Worker (Python) запускает Telegram-бота.
-- Переменные окружения (`ENV`): `BOT_TOKEN`, `ADMIN_IDS`, `VITE_API_BASE_URL`.
+### P0 — Data Integrity (CRITICAL)
+
+1. **Zustand persist for products → REMOVE**
+   - Products are API-only. Zustand should NOT persist products to localStorage.
+   - Categories stay in Zustand (static data from mocks).
+
+2. **useMergedCatalogProducts → DELETE, replace with direct React Query**
+   - No length comparison. No "whoever is bigger" logic.
+   - Pages use `useQuery` directly with `queryKeys.products`.
+
+3. **AdminProductsPage → Server-first mutations**
+   - Remove optimistic add/remove from Zustand.
+   - Use React Query `useMutation` with `onMutate` (optimistic) + `onError` (rollback via `queryClient.setQueryData`).
+   - This gives instant UI + safe rollback.
+
+4. **productStore.ts → strip to only categories + remove persist**
+   - Remove: `addProduct`, `removeProduct`, `updateProduct`, `duplicateProduct`, `reorderProducts`, `setProducts`.
+   - Keep: `categories`, `setCategories`, `addCategory`, `updateCategory`, `removeCategory`.
+   - Remove `persist` middleware entirely (categories are static, no need for localStorage).
+
+### P1 — Consistency
+
+5. **Normalize data model between client and server types**
+   - Ensure Product type matches exactly what server returns.
+   - Remove redundant fields (gallery, gallery_public_ids are derived from images).
+
+6. **Single product retrieval for ProductPage**
+   - ProductPage calls `api.products.getById(id)` via React Query.
+   - No fallback to Zustand.
+
+### P2 — UI (no redesign)
+
+7. **Remove visual artifacts** — check overflow, shadow issues from previous fixes.

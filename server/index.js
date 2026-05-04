@@ -41,17 +41,19 @@ app.use(
       const allowedDomains = [
         '.telegram.org',
         '.t.me',
-        '.telegramweb.app',     // <-- НОВЫЙ домен Mini Apps Telegram
+        '.telegramweb.app',
         '.tgwebapp.com',
         'localhost',
         '127.0.0.1',
-        '.vercel.app',          // <-- для Vercel деплоя
-        '.netlify.app',         // <-- для Netlify деплоя
-        '.railway.app',         // <-- для Railway деплоя
+        '.vercel.app',
+        '.netlify.app',
+        '.railway.app',
+        '.f639.luxury',
+        '.api.f639.luxury',
       ];
       const isAllowed = allowedDomains.some((domain) => {
         if (origin === domain) return true;
-        if (origin.includes(domain)) return true;  // substr check
+        if (origin.includes(domain)) return true;
         if (origin.endsWith(domain)) return true;
         return false;
       });
@@ -64,7 +66,7 @@ app.use(
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'x-telegram-init-data', 'x-tg-init-data', 'Accept'],
     credentials: true,
-    maxAge: 86400,             // <-- Кешируем preflight на 24 часа
+    maxAge: 86400,
   })
 );
 app.use(express.json({ limit: '50mb' }));
@@ -134,7 +136,10 @@ app.get('/products/by-slug/:slug', async (req, res) => {
 
 app.get('/products/:id', async (req, res) => {
   // Try to find by ID first, then by slug
-  let product = await getProductById(req.params.id);
+  // idSlug формат: "abc123-product-name". Берём только id (до первого дефиса)
+  const rawId = req.params.id;
+  const bareId = rawId.split('-')[0];
+  let product = await getProductById(bareId);
   if (!product) {
     const products = await listProducts();
     product = products.find((p) => p.slug === req.params.id) || null;
@@ -145,10 +150,24 @@ app.get('/products/:id', async (req, res) => {
   res.json(product);
 });
 
+// FIX #1: POST /products — генерируем id, если не передан
 app.post('/products', requireAdmin, async (req, res) => {
   const product = req.body;
-  if (!product?.id) {
-    return res.status(400).json({ message: 'Product id is required' });
+  if (!product) {
+    return res.status(400).json({ message: 'Product body is required' });
+  }
+  // Генерируем id, если не передан (создание нового товара)
+  if (!product.id) {
+    product.id = Math.random().toString(36).slice(2, 11);
+  }
+  // Генерируем slug, если не передан
+  if (!product.slug && product.title) {
+    product.slug = product.title
+      .toLowerCase()
+      .replace(/[^a-zа-яё0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 60) + '-' + product.id;
   }
   console.log(`[POST /products] Creating/Updating product: ${product.id} - ${product.title}`);
   const saved = await upsertProduct(product);
@@ -173,7 +192,8 @@ app.post('/upload', requireAdmin, upload.single('file'), async (req, res) => {
 });
 
 app.delete('/products/:id', requireAdmin, async (req, res) => {
-  const productId = req.params.id;
+  // idSlug формат: "abc123-product-name". Берём только id (до первого дефиса)
+  const productId = req.params.id.split('-')[0];
   console.log(`[DELETE /products/${productId}] Attempting to delete product`);
   const product = await getProductById(productId);
 

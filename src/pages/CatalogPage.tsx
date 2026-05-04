@@ -15,7 +15,7 @@ export const CatalogPage: React.FC = () => {
   const { selectedCategory, setSelectedCategory, searchQuery } = useCatalogStore();
   const { editMode } = useAdminStore();
   const { categoryNames, setCategoryName } = useUIStore();
-  const { categories, addCategory, removeCategory, products, removeProduct } = useProductStore();
+  const { categories, addCategory, removeCategory } = useProductStore();
   const haptics = useHaptics();
   const location = useLocation();
   const isFavorites = location.pathname === '/favorites';
@@ -84,13 +84,7 @@ export const CatalogPage: React.FC = () => {
                 <button
                   onClick={async (e) => {
                     e.stopPropagation();
-                    if(window.confirm('Удалить категорию и все товары в ней?')) {
-                      const catProducts = products.filter(p => p.categoryId === cat.id);
-                      // Удаляем товары категории через API и store
-                      for (const p of catProducts) {
-                        try { await api.products.remove(p.id); } catch {}
-                        removeProduct(p.id);
-                      }
+                  if(window.confirm('Удалить категорию и все товары в ней?')) {
                       removeCategory(cat.id);
                       if (selectedCategory === cat.id) setSelectedCategory(null);
                     }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Share2, Heart, RefreshCw, Trash2 } from 'lucide-react';
 import { api } from '../lib/api/endpoints';
@@ -15,7 +15,6 @@ import { useFavoritesStore } from '../store/favoritesStore';
 import { useHaptics } from '../hooks/useHaptics';
 import { useAdminStore } from '../store/adminStore';
 import { useUIStore } from '../store/uiStore';
-import { useProductStore } from '../store/productStore';
 import type { Product } from '../types';
 import { shareInTelegram } from '../lib/telegramShare';
 
@@ -23,9 +22,12 @@ export const ProductPage: React.FC = () => {
   const { idSlug } = useParams<{ idSlug: string }>();
   const navigate = useNavigate();
   const haptics = useHaptics();
+  const queryClient = useQueryClient();
   const [isShareSheetOpen, setIsShareSheetOpen] = useState(false);
   const { toggleFavorite, isFavorite } = useFavoritesStore();
   const { editMode } = useAdminStore();
+  const { customBadgeLabels } = useUIStore();
+  const [selectedSize, setSelectedSize] = useState<string | undefined>();
 
   const goBack = () => {
     haptics.impactLight();
@@ -35,33 +37,30 @@ export const ProductPage: React.FC = () => {
       navigate('/', { replace: true });
     }
   };
-  const productId = idSlug ?? '';
 
-  const storeProduct = useProductStore((s) => {
-    // Поиск: точное совпадение id/slug, затем поиск по префиксу (idSlug = "id-...")
-    let found = s.products.find((p) => p.id === productId || p.slug === productId);
-    if (!found && productId) {
-      found = s.products.find((p) => productId.startsWith(p.id + '-') || productId.startsWith(p.id + '_'));
-    }
-    // Fallback: поиск где id содержится в idSlug (для обратной совместимости)
-    if (!found && productId) {
-      found = s.products.find((p) => p.id.length >= 6 && productId.includes(p.id));
-    }
-    return found;
-  });
-  const { updateProduct, removeProduct } = useProductStore();
-  const { customBadgeLabels } = useUIStore();
-  const [selectedSize, setSelectedSize] = useState<string | undefined>();
+  // Извлекаем ID из idSlug: формат "abc123-product-name" или просто "abc123"
+  const productId = React.useMemo(() => {
+    if (!idSlug) return '';
+    // ID всегда идёт первым фрагментом до первого дефиса
+    return idSlug;
+  }, [idSlug]);
 
-  const { data: remoteProduct, isLoading } = useQuery({
+  // ЕДИНСТВЕННЫЙ источник данных: React Query -> API
+  const { data: product, isLoading } = useQuery({
     queryKey: queryKeys.product(productId),
     queryFn: () => api.products.get(productId),
     enabled: !!productId,
-    retry: 0,
+    retry: 1,
   });
 
-  // Prefer remote product to ensure synced state (edits).
-  const product = remoteProduct ?? storeProduct;
+  // Мутация DELETE для админ-режима
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.products.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.products });
+      navigate('/catalog');
+    },
+  });
 
   // Metadata for sharing using deep links
   const sharePayload = product ? `product_${product.id}` : 'store';
@@ -91,15 +90,6 @@ export const ProductPage: React.FC = () => {
     navigator.clipboard.writeText(fallbackDeepLink);
     haptics.impactMedium();
     setIsShareSheetOpen(false);
-  };
-
-  const handleUpdate = (field: keyof Product, value: string | number | boolean) => {
-    if (!product) return;
-    let finalValue = value;
-    if (field === 'price') {
-      finalValue = parseInt(value?.toString().replace(/\D/g, '') || '0') || 0;
-    }
-    updateProduct(product.id, { [field]: finalValue });
   };
 
   useEffect(() => {
@@ -216,14 +206,8 @@ export const ProductPage: React.FC = () => {
             <button
               onClick={async () => {
                 if (window.confirm('Удалить товар?')) {
-                  try {
-                    await api.products.remove(product.id);
-                  } catch (error) {
-                    console.warn('[admin] remote delete failed, removing locally', error);
-                  }
-                  removeProduct(product.id);
+                  deleteMutation.mutate(product.id);
                   haptics.impactMedium();
-                  navigate('/catalog');
                 }
               }}
               className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-full bg-app-surface-1 border border-app-border-strong text-red-500 shadow-[0_4px_16px_rgba(0,0,0,0.1)] active:scale-95 transition-transform"
@@ -239,7 +223,7 @@ export const ProductPage: React.FC = () => {
         images={
           product.images && product.images.length > 0
             ? [...product.images].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map(img => img.url)
-            : [product.image, ...(product.gallery ?? [])]
+            : [product.image, ...(product.gallery ?? [])].filter(Boolean)
         }
       />
 
@@ -248,23 +232,17 @@ export const ProductPage: React.FC = () => {
         <div className="flex flex-col gap-2 mb-6">
           <div className="flex items-center gap-2 flex-wrap min-h-6">
             <span
-              onClick={() => editMode && updateProduct(product.id, { isNew: !product.isNew })}
               className={`flex items-center rounded-[6px] border px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-wide backdrop-blur-md sm:text-[8px] ${product.isNew
                 ? 'border-amber-800/35 bg-[#92400e]/90 text-amber-50 dark:border-amber-200/25 dark:bg-[#b45309]/90'
-                : editMode
-                  ? 'cursor-pointer border-app-border-strong bg-white/5 text-white/40 opacity-50 hover:bg-white/10'
-                  : 'hidden'
+                : 'hidden'
                 }`}
             >
               {customBadgeLabels['new'] || 'New'}
             </span>
             <span
-              onClick={() => editMode && updateProduct(product.id, { isBestSeller: !product.isBestSeller })}
               className={`flex items-center rounded-[6px] border px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-wide backdrop-blur-md sm:text-[8px] ${product.isBestSeller
                 ? 'border-rose-900/40 bg-[#9f1239]/90 text-rose-50'
-                : editMode
-                  ? 'cursor-pointer border-app-border-strong bg-white/5 text-white/40 opacity-50 hover:bg-white/10'
-                  : 'hidden'
+                : 'hidden'
                 }`}
             >
               {customBadgeLabels['hit'] || 'Hit'}
@@ -280,15 +258,7 @@ export const ProductPage: React.FC = () => {
               </span>
             )}
           </div>
-          <h1
-            contentEditable={editMode}
-            onBlur={(e) => handleUpdate('title', e.currentTarget.textContent || '')}
-            suppressContentEditableWarning
-            className={`text-3xl font-serif text-app-text leading-tight transition-all ${editMode
-              ? 'bg-white/5 outline-dashed outline-1 outline-app-accent/50 px-2 py-1 rounded select-text mb-2'
-              : ''
-              }`}
-          >
+          <h1 className="text-3xl font-serif text-app-text leading-tight transition-all">
             {product.title}
           </h1>
         </div>
@@ -304,15 +274,7 @@ export const ProductPage: React.FC = () => {
 
         {/* Description */}
         <section className="mt-12 border-b border-neutral-500/[0.14] pb-12 dark:border-neutral-400/[0.12]">
-          <p
-            contentEditable={editMode}
-            onBlur={(e) => handleUpdate('description', e.currentTarget.textContent || '')}
-            suppressContentEditableWarning
-            className={`text-sm text-app-text/80 leading-relaxed font-light transition-all ${editMode
-              ? 'bg-white/5 outline-dashed outline-1 outline-app-accent/50 p-3 rounded select-text'
-              : ''
-              }`}
-          >
+          <p className="text-sm text-app-text/80 leading-relaxed font-light transition-all">
             {product.description}
           </p>
         </section>

@@ -11,7 +11,7 @@ import { useAnalyticsStore } from '../store/analyticsStore';
 import { useHaptics } from '../hooks/useHaptics';
 
 export const HomeScreen: React.FC = () => {
-  const { products } = useMergedCatalogProducts();
+  const { data: products = [] } = useMergedCatalogProducts();
   const navigate = useNavigate();
   const { setHomeHeroData, homeSectionTitle, homeSectionSubtitle } = useUIStore();
   const { editMode } = useAdminStore();

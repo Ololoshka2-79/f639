@@ -19,8 +19,8 @@ import { analytics } from './lib/analytics';
 
 import { useCartStore } from './store/cartStore';
 import { useFavoritesStore } from './store/favoritesStore';
-import { useProductStore } from './store/productStore';
 import { useAdminStore } from './store/adminStore';
+import { useMergedCatalogProducts } from './hooks/useMergedCatalogProducts';
 import { useUIStore } from './store/uiStore';
 import { AdminToolbar } from './components/ui/AdminToolbar';
 import { useThemeStore } from './store/themeStore';
@@ -45,16 +45,16 @@ function App() {
   const { setAdminStatus, allowedIds } = useAdminStore();
   const { fetchSettings } = useUIStore();
 
-  // ── Bug 1: sync cart & favorites with current catalog ──────────────
-  const products = useProductStore((s) => s.products);
+  // ── Sync cart & favorites with catalog products via React Query ───
+  const { data: catalogProducts = [] } = useMergedCatalogProducts();
   const cartSyncWithCatalog = useCartStore((s) => s.syncWithCatalog);
   const favoritesSyncWithCatalog = useFavoritesStore((s) => s.syncWithCatalog);
 
   useEffect(() => {
-    const validIds = new Set(products.map((p) => p.id));
+    const validIds = new Set(catalogProducts.map((p: { id: string }) => p.id));
     cartSyncWithCatalog(validIds);
     favoritesSyncWithCatalog(validIds);
-  }, [products, cartSyncWithCatalog, favoritesSyncWithCatalog]);
+  }, [catalogProducts, cartSyncWithCatalog, favoritesSyncWithCatalog]);
   // ── End sync ───────────────────────────────────────────────────────
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAdminStore } from '../../store/adminStore';
 import { useMergedCatalogProducts } from '../../hooks/useMergedCatalogProducts';
 import { ProductCard } from '../../components/admin/ProductCard';
@@ -14,33 +14,123 @@ import { useProductStore } from '../../store/productStore';
 import { api } from '../../lib/api/endpoints';
 import { queryKeys } from '../../lib/queryKeys';
 
+/**
+ * AdminProductsPage — единственный экран управления товарами.
+ *
+ * АРХИТЕКТУРА:
+ * - ЕДИНСТВЕННЫЙ источник данных: API (server/data/products.json) через React Query.
+ * - Zustand store — ТОЛЬКО для категорий (static data, без persist).
+ * - Мутации через useMutation + optimistic update (queryClient.setQueryData).
+ * - При ошибке: rollback к предыдущему состоянию + toast с ошибкой.
+ * - invalidateQueries после успеха: синхронизация всех клиентов.
+ */
 export const AdminProductsPage: React.FC = () => {
     const { isAdmin } = useAdminStore();
     const queryClient = useQueryClient();
 
-    // ЕДИНЫЙ источник данных — API через React Query.
-    // Все пользователи (админы и обычные) видят одни и те же товары.
-    const { products: allProducts } = useMergedCatalogProducts();
+    // ЕДИНЫЙ источник товаров — React Query cache
+    const { data: allProducts = [] } = useMergedCatalogProducts();
 
-    // Zustand store — ТОЛЬКО для optimistic UI при CRUD (categories + быстрые мутации).
-    // Данные ПОЛНОСТЬЮ перезаписываются из API при каждом ответе (useEffect в хуке).
+    // Zustand store — ТОЛЬКО категории
     const {
         categories: allCategories,
-        updateProduct,
-        addProduct,
-        duplicateProduct,
-        removeProduct,
         addCategory,
         updateCategory,
         removeCategory,
     } = useProductStore();
 
-    // Локальный UI state — поиск, фильтрация, сортировка
+    // --- Mutations ---
+
+    const createMutation = useMutation({
+        mutationFn: (product: Product) => api.products.upsert(product),
+        onMutate: async (newProduct) => {
+            // Cancel outgoing refetches
+            await queryClient.cancelQueries({ queryKey: queryKeys.products });
+            // Snapshot previous value for rollback
+            const previous = queryClient.getQueryData<Product[]>(queryKeys.products);
+            // Optimistic update
+            queryClient.setQueryData<Product[]>(queryKeys.products, (old = []) => {
+                return [...old, newProduct];
+            });
+            return { previous };
+        },
+        onError: (_err, _newProduct, context) => {
+            // Rollback to previous state
+            if (context?.previous) {
+                queryClient.setQueryData(queryKeys.products, context.previous);
+            }
+            const msg = _err instanceof Error ? _err.message : 'Ошибка сервера';
+            console.error('[Admin] Server create failed:', msg);
+            showError(`Не удалось создать товар: ${msg}.`);
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.products });
+        },
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: (product: Product) => api.products.upsert(product),
+        onMutate: async (updatedProduct) => {
+            await queryClient.cancelQueries({ queryKey: queryKeys.products });
+            const previous = queryClient.getQueryData<Product[]>(queryKeys.products);
+            queryClient.setQueryData<Product[]>(queryKeys.products, (old = []) => {
+                return old.map((p) => p.id === updatedProduct.id ? { ...p, ...updatedProduct } : p);
+            });
+            return { previous };
+        },
+        onError: (_err, _updatedProduct, context) => {
+            if (context?.previous) {
+                queryClient.setQueryData(queryKeys.products, context.previous);
+            }
+            const msg = _err instanceof Error ? _err.message : 'Ошибка сервера';
+            console.error('[Admin] Server update failed:', msg);
+            showError(`Не удалось обновить товар: ${msg}.`);
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.products });
+        },
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (productId: string) => api.products.remove(productId),
+        onMutate: async (productId) => {
+            await queryClient.cancelQueries({ queryKey: queryKeys.products });
+            const previous = queryClient.getQueryData<Product[]>(queryKeys.products);
+            queryClient.setQueryData<Product[]>(queryKeys.products, (old = []) => {
+                return old.filter((p) => p.id !== productId);
+            });
+            return { previous };
+        },
+        onError: (_err, _productId, context) => {
+            if (context?.previous) {
+                queryClient.setQueryData(queryKeys.products, context.previous);
+            }
+            const msg = _err instanceof Error ? _err.message : 'Ошибка сервера';
+            console.error('[Admin] Server delete failed:', msg);
+            showError(`Не удалось удалить товар: ${msg}.`);
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.products });
+        },
+    });
+
+    const showError = (message: string) => {
+        setToastError(message);
+        setTimeout(() => setToastError(null), 8000);
+    };
+
+    // --- Local UI State ---
+
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
     const [sortBy, setSortBy] = useState<'created' | 'title' | 'price' | 'popularity'>('created');
+    const [isEditorOpen, setIsEditorOpen] = useState(false);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
+    const [deletingProduct, setDeletingProduct] = useState<Product | undefined>(undefined);
+    const [toastError, setToastError] = useState<string | null>(null);
 
-    // Деривированное состояние — локальная фильтрация/сортировка из API-данных
+    // Derived: filtered + sorted products from API data
     const products = useMemo(() => {
         return (allProducts || []).filter(p => {
             const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -54,24 +144,11 @@ export const AdminProductsPage: React.FC = () => {
         });
     }, [allProducts, searchQuery, selectedCategoryId, sortBy]);
 
-    // Modal States
-    const [isEditorOpen, setIsEditorOpen] = useState(false);
-    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-    const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
-    const [deletingProduct, setDeletingProduct] = useState<Product | undefined>(undefined);
-
-    // Toast errors visible to admin
-    const [toastError, setToastError] = useState<string | null>(null);
-
-    const showError = (message: string) => {
-        setToastError(message);
-        // Auto-dismiss after 8 seconds
-        setTimeout(() => setToastError(null), 8000);
-    };
-
     if (!isAdmin) {
         return <Navigate to="/" replace />;
     }
+
+    // --- Handlers ---
 
     const handleAddProduct = () => {
         setEditingProduct(undefined);
@@ -88,32 +165,20 @@ export const AdminProductsPage: React.FC = () => {
         setIsDeleteOpen(true);
     };
 
-    const confirmDelete = async () => {
+    const confirmDelete = () => {
         if (!deletingProduct) return;
-        // Оптимистичное удаление из Zustand store — мгновенный UX
-        removeProduct(deletingProduct.id);
+        deleteMutation.mutate(deletingProduct.id);
         setDeletingProduct(undefined);
         setIsDeleteOpen(false);
-        // Отправляем запрос на сервер
-        try {
-            await api.products.remove(deletingProduct.id);
-            // УСПЕХ: инвалидируем кеш → синхронизация ВСЕХ клиентов
-            queryClient.invalidateQueries({ queryKey: queryKeys.products });
-        } catch (e) {
-            const msg = e instanceof Error ? e.message : 'Ошибка сервера';
-            console.error('[Admin] Server delete failed:', msg);
-            showError(`Не удалось удалить на сервере: ${msg}. Товар удалён локально — обновите страницу позже.`);
-            // НЕ invalidateQueries — сохраняем оптимистичное удаление в UI.
-            // Серверный refetch вернул бы старый список с этим товаром — он бы «воскрес».
-        }
     };
 
-    const handleSaveProduct = async (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const handleSaveProduct = (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
         if (editingProduct) {
-            // Редактирование существующего товара
+            // Edit existing product
             const merged: Product = {
                 ...editingProduct,
                 ...productData,
+                images: productData.images || editingProduct.images || [],
                 updatedAt: new Date().toISOString()
             };
             if (!merged.slug) {
@@ -124,23 +189,11 @@ export const AdminProductsPage: React.FC = () => {
                     .replace(/-+/g, '-')
                     .slice(0, 60);
             }
-            // Оптимистично обновляем Zustand — мгновенный UX
-            updateProduct(editingProduct.id, merged);
             setEditingProduct(undefined);
             setIsEditorOpen(false);
-            // Отправляем на сервер
-            try {
-                await api.products.upsert(merged);
-                // УСПЕХ: инвалидируем кеш
-                queryClient.invalidateQueries({ queryKey: queryKeys.products });
-            } catch (e) {
-                const msg = e instanceof Error ? e.message : 'Ошибка сервера';
-                console.error('[Admin] Server upsert failed:', msg);
-                showError(`Не удалось сохранить на сервере: ${msg}. Изменения сохранены локально.`);
-                // НЕ invalidateQueries — сохраняем оптимистичные данные в UI
-            }
+            updateMutation.mutate(merged);
         } else {
-            // Создание нового товара
+            // Create new product
             const id = Math.random().toString(36).slice(2, 11);
             const slug = (productData.title || 'product')
                 .toLowerCase()
@@ -157,21 +210,9 @@ export const AdminProductsPage: React.FC = () => {
                 updatedAt: now,
                 images: productData.images || []
             } as Product;
-            // Оптимистично добавляем в Zustand — мгновенный UX
-            addProduct(payload);
             setEditingProduct(undefined);
             setIsEditorOpen(false);
-            // Отправляем на сервер
-            try {
-                await api.products.upsert(payload);
-                // УСПЕХ: инвалидируем кеш → синхронизация
-                queryClient.invalidateQueries({ queryKey: queryKeys.products });
-            } catch (e) {
-                const msg = e instanceof Error ? e.message : 'Ошибка сервера';
-                console.error('[Admin] Server create failed:', msg);
-                showError(`Не удалось сохранить на сервере: ${msg}. Товар сохранён локально — обновите страницу позже.`);
-                // НЕ invalidateQueries — сохраняем оптимистично созданный товар в UI
-            }
+            createMutation.mutate(payload);
         }
     };
 
@@ -212,19 +253,11 @@ export const AdminProductsPage: React.FC = () => {
                         onDeleteCategory={(id) => {
                             const catProducts = products.filter(p => p.categoryId === id);
                             const count = catProducts.length;
-                            if (count > 0) {
-                                if (window.confirm(`В этой категории ${count} товаров. Удалить их все вместе с категорией?`)) {
-                                    // Удаляем товары категории с сервера и из store
-                                    catProducts.forEach(p => {
-                                        api.products.remove(p.id).catch(() => {});
-                                        removeProduct(p.id);
-                                    });
-                                    removeCategory(id);
-                                    // Инвалидируем кеш → все клиенты синхронизируются
-                                    queryClient.invalidateQueries({ queryKey: queryKeys.products });
-                                }
-                            } else {
-                                if (window.confirm('Удалить категорию?')) removeCategory(id);
+                            if (window.confirm(`В этой категории ${count} товаров. Удалить их все вместе с категорией?`)) {
+                                catProducts.forEach(p => {
+                                    deleteMutation.mutate(p.id);
+                                });
+                                removeCategory(id);
                             }
                         }}
                      />
@@ -271,9 +304,29 @@ export const AdminProductsPage: React.FC = () => {
                                     key={p.id}
                                     product={p}
                                     onEdit={() => handleEditProduct(p)}
-                                    onDuplicate={() => duplicateProduct(p.id)}
-                                    onToggleVisibility={() => updateProduct(p.id, { isHidden: !p.isHidden })}
                                     onDelete={() => handleDeleteProduct(p)}
+                                    onDuplicate={() => {
+                                        const id = Math.random().toString(36).slice(2, 11);
+                                        const slug = (p.title || 'product')
+                                            .toLowerCase()
+                                            .replace(/[^a-zа-яё0-9\s-]/g, '')
+                                            .replace(/\s+/g, '-')
+                                            .replace(/-+/g, '-')
+                                            .slice(0, 60) + '-' + id;
+                                        const now = new Date().toISOString();
+                                        const copy: Product = {
+                                            ...p,
+                                            id,
+                                            slug,
+                                            title: p.title + ' (копия)',
+                                            createdAt: now,
+                                            updatedAt: now,
+                                        };
+                                        createMutation.mutate(copy);
+                                    }}
+                                    onToggleVisibility={() => {
+                                        updateMutation.mutate({ ...p, isHidden: !p.isHidden });
+                                    }}
                                 />
                             ))}
                         </div>
