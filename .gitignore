@@ -7,6 +7,10 @@ dist/
 .env.development
 *.log
 .DS_Store
+test_crud.mjs
+test_product.json
+post_result.txt
+result.txt
 uploads/
 server/data/
 .continue/

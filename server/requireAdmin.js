@@ -2,6 +2,13 @@ import { config } from './config.js';
 import { validateTelegramInitData } from './telegramAuth.js';
 
 export function requireAdmin(req, res, next) {
+  // Skip admin auth for local development
+  if (config.skipAdminAuth) {
+    console.log('[requireAdmin] SKIP_ADMIN_AUTH=true — bypassing auth');
+    req.telegramUser = { id: 0, username: 'dev' };
+    return next();
+  }
+
   const initData =
     req.headers['x-telegram-init-data'] ||
     req.headers['x-tg-init-data'] ||

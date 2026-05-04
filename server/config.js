@@ -1,7 +1,18 @@
 import { createHmac } from 'node:crypto';
 import dotenv from 'dotenv';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-dotenv.config();
+// Загружаем .env, потом .env.local, потом .env.development.local (локальная разработка)
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+
+dotenv.config(); // .env
+const localEnv = resolve(__dirname, '../.env.local');
+if (existsSync(localEnv)) dotenv.config({ path: localEnv });
+
+const devLocalEnv = resolve(__dirname, '../.env.development.local');
+if (existsSync(devLocalEnv)) dotenv.config({ path: devLocalEnv });
 
 function parseAdminIds(raw) {
   if (!raw || !raw.trim()) return [];
@@ -23,6 +34,7 @@ export const config = {
     .filter(Boolean),
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
   adminIds: parseAdminIds(process.env.ADMIN_IDS),
+  skipAdminAuth: process.env.SKIP_ADMIN_AUTH === 'true',  // локальная разработка без Telegram
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
     apiKey: process.env.CLOUDINARY_API_KEY || '',
