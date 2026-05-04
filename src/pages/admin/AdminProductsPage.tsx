@@ -65,6 +65,7 @@ export const AdminProductsPage: React.FC = () => {
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.products });
+            queryClient.invalidateQueries({ queryKey: ["product"] }); // ✅ invalidate product detail pages too
         },
     });
 
@@ -88,6 +89,7 @@ export const AdminProductsPage: React.FC = () => {
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.products });
+            queryClient.invalidateQueries({ queryKey: ["product"] }); // ✅ invalidate product detail pages too
         },
     });
 

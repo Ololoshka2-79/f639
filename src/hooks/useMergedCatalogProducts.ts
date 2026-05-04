@@ -23,7 +23,8 @@ export function useProductList() {
   const query = useQuery<Product[], Error>({
     queryKey: queryKeys.products,
     queryFn: async (): Promise<Product[]> => api.products.list(),
-    staleTime: 5_000,
+    staleTime: 15_000,
+    refetchInterval: 15_000,
     retry: 2,
   });
 

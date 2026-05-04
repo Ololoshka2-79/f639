@@ -21,7 +21,9 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,       // ✅ ВКЛЮЧАЕМ safety net
+      refetchOnMount: true,
+      gcTime: 30_000,                   // 30s cache вместо 5min
     },
   },
 });
