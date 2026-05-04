@@ -19,7 +19,7 @@ interface ProductStore {
   removeCategory: (id: string) => void;
 }
 
-export const useProductStore = create<ProductStore>()((set, get) => ({
+export const useProductStore = create<ProductStore>()((set, _get) => ({
   /* ---- Products ---- */
   products: [],
   setProducts: (products) => set({ products }),
