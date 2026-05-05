@@ -45,9 +45,14 @@ export class LuxuryErrorBoundary extends Component<Props, State> {
           </motion.div>
           
           <h1 className="text-2xl font-serif text-app-text mb-4">Что-то пошло не так</h1>
-          <p className="text-sm text-app-text-muted mb-10 max-w-xs leading-relaxed">
+          <p className="text-sm text-app-text-muted mb-4 max-w-xs leading-relaxed">
             Произошла непредвиденная ошибка. Пожалуйста, обновите страницу или вернитесь в начало.
           </p>
+
+          <div className="mb-10 w-full max-w-xs overflow-auto rounded bg-red-500/10 p-4 text-left font-mono text-[10px] text-red-500">
+            <p className="font-bold">{this.state.error?.name}: {this.state.error?.message}</p>
+            <pre className="mt-2 opacity-60">{this.state.error?.stack?.split('\n').slice(0, 3).join('\n')}</pre>
+          </div>
 
           <div className="w-full space-y-3">
             <button

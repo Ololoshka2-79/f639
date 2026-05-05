@@ -48,11 +48,19 @@ function App() {
   const favoritesSyncWithCatalog = useFavoritesStore((s) => s.syncWithCatalog);
 
   useEffect(() => {
-    // Only sync if data is successfully loaded and not empty to prevent accidental wipes on load
-    if (isSuccess && catalogProducts.length > 0) {
-      const validIds = new Set(catalogProducts.map((p: { id: string }) => p.id));
-      cartSyncWithCatalog(validIds);
-      favoritesSyncWithCatalog(validIds);
+    // Only sync if data is successfully loaded and is an array to prevent accidental wipes or crashes
+    if (isSuccess && Array.isArray(catalogProducts) && catalogProducts.length > 0) {
+      try {
+        const validIds = new Set(
+          catalogProducts
+            .filter(p => p && p.id)
+            .map((p: { id: string }) => p.id)
+        );
+        cartSyncWithCatalog(validIds);
+        favoritesSyncWithCatalog(validIds);
+      } catch (err) {
+        console.error('[App] Catalog sync failed:', err);
+      }
     }
   }, [catalogProducts, isSuccess, cartSyncWithCatalog, favoritesSyncWithCatalog]);
   // ── End sync ───────────────────────────────────────────────────────
