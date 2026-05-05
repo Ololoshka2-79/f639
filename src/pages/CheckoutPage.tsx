@@ -137,7 +137,9 @@ export const CheckoutPage: React.FC = () => {
         },
       };
 
+      console.log("SUBMIT START");
       const { orderId } = await api.orders.create(orderData);
+      console.log("ORDER API SUCCESS:", orderId);
 
       const { addOrder, addSavedAddress } = useOrderStore.getState();
       addOrder({
@@ -152,15 +154,11 @@ export const CheckoutPage: React.FC = () => {
       addSavedAddress(deliveryData.address);
 
       analytics.trackPurchase(orderId, checkoutTotal, checkoutItems as any);
-      if (checkoutBuyNowItem) {
-        clearBuyNowItem();
-      } else {
-        clearCart();
-      }
+      
+      console.log("BEFORE MODAL OPEN");
       haptics.success();
-
-      // Показываем кастомный попап вместо редиректа на OrderSuccess
       setShowSuccessPopup(true);
+      console.log("AFTER MODAL OPEN (setShowSuccessPopup(true) called)");
     } catch (error) {
       haptics.error();
       console.error('Order creation failed', error);
@@ -179,11 +177,16 @@ export const CheckoutPage: React.FC = () => {
   };
 
   const handleCloseSuccessPopup = useCallback(() => {
+    console.log("CLOSING MODAL - Clearing cart and navigating");
+    if (checkoutBuyNowItem) {
+      clearBuyNowItem();
+    } else {
+      clearCart();
+    }
     setShowSuccessPopup(false);
-    clearBuyNowItem();
     resetCheckout();
-    navigate('/');
-  }, [clearBuyNowItem, resetCheckout, navigate]);
+    navigate('/', { replace: true });
+  }, [clearBuyNowItem, clearCart, checkoutBuyNowItem, resetCheckout, navigate]);
 
   return (
     <div className="min-h-screen bg-app-bg pb-36">
