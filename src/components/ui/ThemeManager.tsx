@@ -14,15 +14,15 @@ export const ThemeManager: React.FC = () => {
       document.documentElement.classList.add('dark');
       document.documentElement.classList.remove('light');
       if (tg) {
-        tg.headerColor = '#0A0A0A';
-        tg.backgroundColor = '#0A0A0A';
+        tg.headerColor = '#000000'; // Match --app-bg
+        tg.backgroundColor = '#000000'; // Match --app-bg
       }
     } else {
       document.documentElement.classList.add('light');
       document.documentElement.classList.remove('dark');
       if (tg) {
-        tg.headerColor = '#FFFFFF';
-        tg.backgroundColor = '#FFFFFF';
+        tg.headerColor = '#FFFFFF'; // Match --app-bg
+        tg.backgroundColor = '#FFFFFF'; // Match --app-bg
       }
     }
   }, [mode]);

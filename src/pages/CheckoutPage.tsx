@@ -10,7 +10,7 @@ import { SummaryStep } from '../components/checkout/SummaryStep';
 
 import { useCheckoutStore, CHECKOUT_TOTAL_STEPS } from '../store/checkoutStore';
 import { useCartStore } from '../store/cartStore';
-import { useProductStore } from '../store/productStore';
+import { useMergedCatalogProducts } from '../hooks/useMergedCatalogProducts';
 import { useOrderStore } from '../store/orderStore';
 import { useHaptics } from '../hooks/useHaptics';
 import { api } from '../lib/api/endpoints';
@@ -30,7 +30,7 @@ export const CheckoutPage: React.FC = () => {
   const { currentStep, setStep, contactInfo, deliveryData, resetCheckout, checkoutBuyNowItem, clearBuyNowItem } =
     useCheckoutStore();
   const { items, clearCart } = useCartStore();
-  const products = useProductStore((state) => state.products);
+  const { data: products = [] } = useMergedCatalogProducts();
 
   const cartItemsBase = checkoutBuyNowItem ? [checkoutBuyNowItem] : items;
 

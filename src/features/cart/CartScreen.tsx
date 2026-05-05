@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Trash2, ShoppingBag } from 'lucide-react';
 import { useCheckoutStore } from '../../store/checkoutStore';
 import { useCartStore } from '../../store/cartStore';
-import { useProductStore } from '../../store/productStore';
+import { useMergedCatalogProducts } from '../../hooks/useMergedCatalogProducts';
 import { formatCurrency } from '../../lib/utils';
 import { Button } from '../../components/ui/Button';
 import { useHaptics } from '../../hooks/useHaptics';
@@ -18,7 +18,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ onCheckout }) => {
   const navigate = useNavigate();
   const { items, removeItem, updateQuantity, addItem } = useCartStore();
   const clearBuyNowItem = useCheckoutStore(s => s.clearBuyNowItem);
-  const products = useProductStore((state) => state.products);
+  const { data: products = [] } = useMergedCatalogProducts();
   const haptics = useHaptics();
   const [swipedItemId, setSwipedItemId] = useState<string | null>(null);
   const [undoItem, setUndoItem] = useState<{ cartItem: CartItem; product: Product } | null>(null);

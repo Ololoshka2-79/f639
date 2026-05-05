@@ -23,7 +23,6 @@ import { useAdminStore } from './store/adminStore';
 import { useMergedCatalogProducts } from './hooks/useMergedCatalogProducts';
 import { useUIStore } from './store/uiStore';
 import { AdminToolbar } from './components/ui/AdminToolbar';
-import { useThemeStore } from './store/themeStore';
 
 const AnalyticsPage = lazy(() =>
   import('./pages/admin/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage }))
@@ -35,8 +34,6 @@ const AdminProductsPage = lazy(() =>
 function App() {
   const tg = window.Telegram?.WebApp;
   const [loading, setLoading] = useState(true);
-  const { mode } = useThemeStore();
-  const theme = mode === 'auto' ? (window.Telegram?.WebApp?.colorScheme || 'light') : mode;
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -46,15 +43,18 @@ function App() {
   const { fetchSettings } = useUIStore();
 
   // ── Sync cart & favorites with catalog products via React Query ───
-  const { data: catalogProducts = [] } = useMergedCatalogProducts();
+  const { data: catalogProducts = [], isSuccess } = useMergedCatalogProducts();
   const cartSyncWithCatalog = useCartStore((s) => s.syncWithCatalog);
   const favoritesSyncWithCatalog = useFavoritesStore((s) => s.syncWithCatalog);
 
   useEffect(() => {
-    const validIds = new Set(catalogProducts.map((p: { id: string }) => p.id));
-    cartSyncWithCatalog(validIds);
-    favoritesSyncWithCatalog(validIds);
-  }, [catalogProducts, cartSyncWithCatalog, favoritesSyncWithCatalog]);
+    // Only sync if data is successfully loaded and not empty to prevent accidental wipes on load
+    if (isSuccess && catalogProducts.length > 0) {
+      const validIds = new Set(catalogProducts.map((p: { id: string }) => p.id));
+      cartSyncWithCatalog(validIds);
+      favoritesSyncWithCatalog(validIds);
+    }
+  }, [catalogProducts, isSuccess, cartSyncWithCatalog, favoritesSyncWithCatalog]);
   // ── End sync ───────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -143,7 +143,7 @@ function App() {
 
 
   return (
-    <div className={`min-h-[var(--tg-height,100vh)] w-full text-app-text transition-colors duration-500 overflow-x-hidden relative ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
+    <div className={`min-h-[var(--tg-height,100vh)] w-full text-app-text transition-colors duration-500 overflow-x-hidden relative bg-app-bg`}>
       <ThemeManager />
       <AdminToolbar />
 

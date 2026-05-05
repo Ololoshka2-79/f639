@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  box-sizing: border-box;
+}
+
 @layer base {
 
   /* ── Fullscreen fix ──────────────────────────────────────────────────
@@ -13,18 +17,22 @@
     padding: 0;
     background: var(--app-bg);
     height: 100%;
-    overflow: hidden;
+    width: 100%;
+    overflow-x: hidden;
+    overflow-y: hidden;
   }
 
   body {
     margin: 0;
     padding: 0;
     height: 100%;
+    width: 100%;
     background-color: var(--app-bg);
     color: var(--app-text);
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: hidden;
     position: relative;
   }
 
