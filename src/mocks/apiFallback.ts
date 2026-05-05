@@ -12,9 +12,20 @@ export function getFallbackProductsList(params: { category?: string }): Product[
 }
 
 export function getFallbackProductById(idOrSlug: string): Product | undefined {
-  // idSlug формат: "abc123-product-name". Берём только id (до первого дефиса)
-  const bareId = idOrSlug.split('-')[0];
-  return PRODUCTS.find((p) => p.id === bareId || p.id === idOrSlug || p.slug === idOrSlug);
+  // 1. Exact ID match
+  let product = PRODUCTS.find((p) => p.id === idOrSlug);
+  
+  // 2. Exact Slug match
+  if (!product) {
+    product = PRODUCTS.find((p) => p.slug === idOrSlug);
+  }
+
+  // 3. ID prefix match (for ID-slug format where ID may contain hyphens)
+  if (!product) {
+    product = PRODUCTS.find((p) => idOrSlug.startsWith(p.id + '-'));
+  }
+
+  return product;
 }
 
 export function getFallbackRelated(excludeId: string): Product[] {

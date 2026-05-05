@@ -117,33 +117,35 @@ async function uploadBuffer(fileBuffer, folder) {
   };
 }
 
-app.get('/health', (_req, res) => {
+const v1Router = express.Router();
+
+v1Router.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
-app.get('/products', async (_req, res) => {
+
+v1Router.get('/products', async (_req, res) => {
   const products = await listProducts();
   res.json(products);
 });
 
-app.get('/products/by-slug/:slug', async (req, res) => {
+v1Router.get('/products/:id', async (req, res) => {
+  const idOrSlug = req.params.id;
   const products = await listProducts();
-  const product = products.find((p) => p.slug === req.params.slug);
-  if (!product) {
-    return res.status(404).json({ message: 'Product not found' });
-  }
-  res.json(product);
-});
 
-app.get('/products/:id', async (req, res) => {
-  // Try to find by ID first, then by slug
-  // idSlug формат: "abc123-product-name". Берём только id (до первого дефиса)
-  const rawId = req.params.id;
-  const bareId = rawId.split('-')[0];
-  let product = await getProductById(bareId);
+  // 1. Попытка найти по точному ID
+  let product = products.find((p) => p.id === idOrSlug);
+
+  // 2. Попытка найти по Slug
   if (!product) {
-    const products = await listProducts();
-    product = products.find((p) => p.slug === req.params.id) || null;
+    product = products.find((p) => p.slug === idOrSlug);
   }
+
+  // 3. Попытка найти по префиксу ID (для формата ID-slug, где ID может содержать дефисы)
+  // Мы ищем продукт, чей ID является началом строки idOrSlug, за которым следует дефис
+  if (!product) {
+    product = products.find((p) => idOrSlug.startsWith(p.id + '-'));
+  }
+
   if (!product) {
     return res.status(404).json({ message: 'Product not found' });
   }
@@ -151,7 +153,7 @@ app.get('/products/:id', async (req, res) => {
 });
 
 // FIX #1: POST /products — генерируем id, если не передан
-app.post('/products', requireAdmin, async (req, res) => {
+v1Router.post('/products', requireAdmin, async (req, res) => {
   const product = req.body;
   if (!product) {
     return res.status(400).json({ message: 'Product body is required' });
@@ -174,7 +176,7 @@ app.post('/products', requireAdmin, async (req, res) => {
   return res.json(saved);
 });
 
-app.post('/upload', requireAdmin, upload.single('file'), async (req, res) => {
+v1Router.post('/upload', requireAdmin, upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'File is required' });
   }
@@ -191,16 +193,23 @@ app.post('/upload', requireAdmin, upload.single('file'), async (req, res) => {
   }
 });
 
-app.delete('/products/:id', requireAdmin, async (req, res) => {
-  // idSlug формат: "abc123-product-name". Берём только id (до первого дефиса)
-  const productId = req.params.id.split('-')[0];
-  console.log(`[DELETE /products/${productId}] Attempting to delete product`);
-  const product = await getProductById(productId);
+v1Router.delete('/products/:id', requireAdmin, async (req, res) => {
+  const idOrSlug = req.params.id;
+  const products = await listProducts();
+
+  // Используем ту же логику поиска, что и в GET
+  let product = products.find((p) => p.id === idOrSlug);
+  if (!product) {
+    product = products.find((p) => idOrSlug.startsWith(p.id + '-'));
+  }
 
   if (!product) {
-    console.warn(`[DELETE /product/${productId}] Product not found`);
+    console.warn(`[DELETE /products/${idOrSlug}] Product not found`);
     return res.status(404).json({ message: 'Product not found' });
   }
+
+  const productId = product.id;
+  console.log(`[DELETE /products/${productId}] Attempting to delete product`);
 
   const publicIds = [
     product.image_public_id,
@@ -304,19 +313,22 @@ const handlePostOrder = async (req, res) => {
   }
 };
 
-app.get('/orders', handleGetOrders);
-app.post('/orders', handlePostOrder);
+v1Router.get('/orders', handleGetOrders);
+v1Router.post('/orders', handlePostOrder);
 
-// --- Settings Endpoints ---
-app.get('/settings', async (_req, res) => {
+v1Router.get('/settings', async (_req, res) => {
   const settings = await getSettings();
   res.json(settings);
 });
 
-app.post('/settings', requireAdmin, async (req, res) => {
+v1Router.post('/settings', requireAdmin, async (req, res) => {
   const settings = await updateSettings(req.body);
   res.json(settings);
 });
+
+// Подключаем роутер с префиксом /v1 и без него (для обратной совместимости)
+app.use('/v1', v1Router);
+app.use(v1Router);
 
 app.use((error, _req, res, _next) => {
   if (error?.code === 'LIMIT_FILE_SIZE' || error?.message?.includes('File too large')) {
