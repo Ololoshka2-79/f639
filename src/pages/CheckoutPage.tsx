@@ -227,25 +227,28 @@ export const CheckoutPage: React.FC = () => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 20 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="fixed left-6 right-6 z-[110] mx-auto max-w-md rounded-[24px] border border-app-border/80 bg-app-surface-1 p-8 shadow-[0_25px_60px_rgba(0,0,0,0.5)]"
+                className="fixed left-6 right-6 z-[110] mx-auto max-w-md rounded-[24px] border border-app-border/80 bg-app-surface-1 p-8 shadow-[0_25px_60px_rgba(0,0,0,0.5)] backdrop-blur-3xl"
                 style={{ top: '30vh' }}
               >
                 <button
                   type="button"
                   onClick={handleCloseSuccessPopup}
-                  className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-app-surface-2 text-app-text-muted hover:bg-app-surface-3 transition-colors"
+                  className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-app-border bg-app-surface-2 text-app-text hover:bg-app-surface-3 transition-all active:scale-90"
+                  aria-label="Закрыть"
                 >
-                  <X size={16} />
+                  <X size={18} strokeWidth={2.5} />
                 </button>
                 <div className="text-center">
-                  <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-app-accent/15">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-app-accent">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-app-accent/10">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-app-accent text-app-bg shadow-lg">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </div>
                   </div>
-                  <h3 className="mb-3 text-lg font-serif text-app-text">Заказ оформлен</h3>
-                  <p className="text-sm text-app-text-muted leading-relaxed">
-                    С вами свяжутся в ближайшее время для подтверждения и оплаты
+                  <h3 className="mb-4 text-xl font-serif text-app-text">Заказ оформлен</h3>
+                  <p className="text-sm leading-relaxed text-app-text-muted">
+                    С Вами свяжется администратор для подтверждения и оплаты заказа.
                   </p>
                 </div>
               </motion.div>
