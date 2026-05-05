@@ -161,9 +161,9 @@ const FullscreenZoomImage: React.FC<{ src: string; onSwipeDown: () => void }> = 
   const haptics = useHaptics();
 
   // Optimize URL for viewer
-  const optimizedSrc = src.includes('cloudinary') 
+  const optimizedSrc = (src || '').includes('cloudinary') 
     ? src.replace('/upload/', '/upload/f_auto,q_auto,w_1600,c_limit/') 
-    : src;
+    : (src || '');
 
   return (
     <div
@@ -263,11 +263,12 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
   useEffect(() => {
     if (!isFullscreen || !images.length) return;
     const preload = (index: number) => {
-      if (images[index]) {
+      const url = images[index];
+      if (url) {
         const img = new Image();
-        img.src = images[index].includes('cloudinary') 
-          ? images[index].replace('/upload/', '/upload/f_auto,q_auto,w_1600,c_limit/') 
-          : images[index];
+        img.src = url.includes('cloudinary') 
+          ? url.replace('/upload/', '/upload/f_auto,q_auto,w_1600,c_limit/') 
+          : url;
       }
     };
     preload(activeImageIndex + 1);

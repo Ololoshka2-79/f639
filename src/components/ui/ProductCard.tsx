@@ -86,11 +86,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
           className="flex h-full w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden no-scrollbar bg-app-surface-1"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           onMouseEnter={() => {
-            // Preload full size image when hovering
-            const img = new Image();
-            img.src = product.image.includes('cloudinary') 
-              ? product.image.replace('/upload/', '/upload/f_auto,q_auto,w_1200,c_limit/') 
-              : product.image;
+            const src = product.image || '';
+            if (src.includes('cloudinary')) {
+               const img = new Image();
+               img.src = src.replace('/upload/', '/upload/f_auto,q_auto,w_1200,c_limit/');
+            }
           }}
         >
           {sortedImages.length === 0 ? (
@@ -98,12 +98,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
                {/* LQIP Placeholder */}
                <div className="absolute inset-0 bg-app-surface-3 animate-pulse" />
                <img
-                src={product.image.includes('cloudinary') ? product.image.replace('/upload/', '/upload/w_10,blur_1000,f_auto,q_auto/') : product.image}
+                src={(product.image || '').includes('cloudinary') ? product.image.replace('/upload/', '/upload/w_10,blur_1000,f_auto,q_auto/') : (product.image || '')}
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover blur-sm opacity-50"
               />
                <img
-                src={product.image.includes('cloudinary') ? product.image.replace('/upload/', '/upload/w_600,c_scale,q_auto,f_auto/') : product.image}
+                src={(product.image || '').includes('cloudinary') ? product.image.replace('/upload/', '/upload/w_600,c_scale,q_auto,f_auto/') : (product.image || '')}
                 alt={product.title}
                 loading="eager"
                 onLoad={(e) => {
@@ -120,9 +120,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) =>
                 <div className="absolute inset-0 bg-app-surface-3 animate-pulse" />
                 <img
                   loading={idx === 0 ? "eager" : "lazy"}
-                  src={img.url.includes('cloudinary') 
+                  src={(img.url || '').includes('cloudinary') 
                     ? img.url.replace('/upload/', idx === 0 ? '/upload/w_600,c_scale,q_auto,f_auto/' : '/upload/w_400,c_scale,q_auto,f_auto/') 
-                    : img.url}
+                    : (img.url || '')}
                   alt={`${product.title} - ${idx + 1}`}
                   onLoad={(e) => {
                     (e.target as HTMLImageElement).style.opacity = '1';
