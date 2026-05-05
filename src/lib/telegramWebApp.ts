@@ -25,8 +25,6 @@ export function bootstrapTelegramViewport(): void {
   });
 
   // Базовые стили
-  if (tg.setHeaderColor) tg.setHeaderColor('#ffffff');
-  if (tg.setBackgroundColor) tg.setBackgroundColor('#ffffff');
   
   // Установка высоты (базовая)
   const setHeight = () => {
