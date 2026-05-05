@@ -1,60 +1,122 @@
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
+import { createClient } from '@supabase/supabase-js';
+import { config } from './config.js';
 
-const dataDir = path.resolve('server', 'data');
-const productsPath = path.resolve(dataDir, 'products.json');
+// Инициализируем клиент Supabase с Service Role Key для обхода RLS на бэкенде
+const supabase = createClient(config.supabase.url, config.supabase.serviceRoleKey);
 
-async function ensureStore() {
-  await fs.mkdir(dataDir, { recursive: true });
-  try {
-    await fs.access(productsPath);
-  } catch {
-    await fs.writeFile(productsPath, '[]', 'utf8');
-  }
+/**
+ * Преобразует поля из БД (snake_case) в поля для фронтенда (camelCase)
+ */
+function mapFromDb(dbProduct) {
+  if (!dbProduct) return null;
+  return {
+    ...dbProduct,
+    categoryId: dbProduct.category_id,
+    oldPrice: dbProduct.old_price,
+    inStock: dbProduct.in_stock,
+    isOnSale: dbProduct.is_on_sale,
+    isNew: dbProduct.is_new,
+    isBestSeller: dbProduct.is_best_seller,
+    isHidden: dbProduct.is_hidden,
+    createdAt: dbProduct.created_at,
+    updatedAt: dbProduct.updated_at,
+  };
 }
 
-async function readProducts() {
-  await ensureStore();
-  const raw = await fs.readFile(productsPath, 'utf8');
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
+/**
+ * Преобразует поля из фронтенда (camelCase) в поля для БД (snake_case)
+ */
+function mapToDb(product) {
+  if (!product) return null;
+  const dbData = {
+    id: product.id,
+    title: product.title,
+    slug: product.slug,
+    description: product.description,
+    price: product.price,
+    old_price: product.oldPrice,
+    category_id: product.categoryId,
+    in_stock: product.inStock,
+    is_on_sale: product.isOnSale,
+    is_new: product.isNew,
+    is_best_seller: product.isBestSeller,
+    is_hidden: product.isHidden,
+    material: product.material,
+    size: product.size,
+    image: product.image,
+    image_public_id: product.image_public_id,
+    gallery: product.gallery,
+    gallery_public_ids: product.gallery_public_ids,
+    images: product.images,
+  };
 
-async function writeProducts(products) {
-  await ensureStore();
-  await fs.writeFile(productsPath, JSON.stringify(products, null, 2), 'utf8');
+  // Удаляем undefined поля, чтобы не затирать данные в БД
+  Object.keys(dbData).forEach(key => dbData[key] === undefined && delete dbData[key]);
+  
+  return dbData;
 }
 
 export async function listProducts() {
-  return readProducts();
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('[Supabase] listProducts error:', error);
+    return [];
+  }
+
+  return (data || []).map(mapFromDb);
 }
 
 export async function getProductById(id) {
-  const products = await readProducts();
-  return products.find((p) => p.id === id) || null;
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    if (error.code !== 'PGRST116') { // PGRST116 - Not found
+      console.error('[Supabase] getProductById error:', error);
+    }
+    return null;
+  }
+
+  return mapFromDb(data);
 }
 
 export async function upsertProduct(product) {
-  const products = await readProducts();
-  const index = products.findIndex((p) => p.id === product.id);
-  if (index >= 0) {
-    products[index] = { ...products[index], ...product };
-  } else {
-    products.push(product);
+  const dbData = mapToDb(product);
+  dbData.updated_at = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('products')
+    .upsert(dbData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[Supabase] upsertProduct error:', error);
+    throw error;
   }
-  await writeProducts(products);
-  return product;
+
+  return mapFromDb(data);
 }
 
 export async function removeProductById(id) {
-  const products = await readProducts();
-  const index = products.findIndex((p) => p.id === id);
-  if (index < 0) return null;
-  const [removed] = products.splice(index, 1);
-  await writeProducts(products);
-  return removed;
+  const { data, error } = await supabase
+    .from('products')
+    .delete()
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[Supabase] removeProductById error:', error);
+    return null;
+  }
+
+  return mapFromDb(data);
 }

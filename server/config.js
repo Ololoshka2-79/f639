@@ -40,6 +40,11 @@ export const config = {
     apiKey: process.env.CLOUDINARY_API_KEY || '',
     apiSecret: process.env.CLOUDINARY_API_SECRET || '',
   },
+  supabase: {
+    url: process.env.SUPABASE_URL || '',
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+    anonKey: process.env.SUPABASE_ANON_KEY || '',
+  },
 };
 
 export function validateConfig() {
@@ -49,6 +54,8 @@ export function validateConfig() {
   if (!config.cloudinary.cloudName) missing.push('CLOUDINARY_CLOUD_NAME');
   if (!config.cloudinary.apiKey) missing.push('CLOUDINARY_API_KEY');
   if (!config.cloudinary.apiSecret) missing.push('CLOUDINARY_API_SECRET');
+  if (!config.supabase.url) missing.push('SUPABASE_URL');
+  if (!config.supabase.serviceRoleKey) missing.push('SUPABASE_SERVICE_ROLE_KEY');
 
   if (missing.length) {
     console.warn(`[server] Warning! Missing required env vars: ${missing.join(', ')}. Some admin features might not work.`);
