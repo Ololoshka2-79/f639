@@ -296,7 +296,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
               alt={`Product ${i + 1}`}
               onClick={() => openFullscreenViewer(images, i)}
               loading={i === 0 ? 'eager' : 'lazy'}
-              className="h-full w-full cursor-zoom-in object-cover pb-12 transition-opacity duration-300 opacity-0"
+              className="h-full w-full cursor-zoom-in object-contain pb-12 transition-opacity duration-300 opacity-0"
               style={{ animationFillMode: 'forwards' }}
               onLoad={(e) => {
                 (e.target as HTMLImageElement).style.opacity = '1';
