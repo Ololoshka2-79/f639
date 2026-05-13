@@ -278,26 +278,26 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
   if (!images.length) return null;
 
   return (
-    <div className="group relative w-full overflow-hidden">
+    <div className="group relative aspect-[4/5] w-full overflow-hidden bg-app-bg">
       {/* Swiper */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden no-scrollbar"
+        className="flex h-full w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden no-scrollbar"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {images.map((src, i) => (
           <div
             key={`gallery-img-${i}`}
-            className="w-full shrink-0 snap-center relative"
+            className="h-full w-full shrink-0 snap-center relative overflow-hidden"
           >
             <img
               src={src}
               alt={`Product ${i + 1}`}
               onClick={() => openFullscreenViewer(images, i)}
               loading={i === 0 ? 'eager' : 'lazy'}
-              className="w-full h-auto block cursor-zoom-in transition-opacity duration-300 opacity-0"
-              style={{ maxHeight: '85vh', animationFillMode: 'forwards' }}
+              className="h-full w-full cursor-zoom-in object-cover pb-12 transition-opacity duration-300 opacity-0"
+              style={{ animationFillMode: 'forwards' }}
               onLoad={(e) => {
                 (e.target as HTMLImageElement).style.opacity = '1';
               }}
