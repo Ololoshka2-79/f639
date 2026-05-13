@@ -289,24 +289,14 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
         {images.map((src, i) => (
           <div
             key={`gallery-img-${i}`}
-            className="h-full w-full shrink-0 snap-center relative overflow-hidden"
+            className="h-full w-full shrink-0 snap-center relative overflow-hidden flex items-center justify-center"
           >
-            {/* Blurred backdrop — fills space around the main image */}
-            <img
-              src={src}
-              aria-hidden="true"
-              className="absolute inset-0 h-full w-full object-cover scale-110 opacity-70"
-              style={{ filter: 'blur(24px)', pointerEvents: 'none', userSelect: 'none' }}
-            />
-            {/* Dark overlay for depth */}
-            <div className="absolute inset-0 bg-black/25 pointer-events-none" />
-            {/* Main image — full, no cropping */}
             <img
               src={src}
               alt={`Product ${i + 1}`}
               onClick={() => openFullscreenViewer(images, i)}
               loading={i === 0 ? 'eager' : 'lazy'}
-              className="relative z-10 h-full w-full cursor-zoom-in object-contain transition-opacity duration-300 opacity-0"
+              className="h-full w-full cursor-zoom-in object-contain transition-opacity duration-300 opacity-0"
               style={{ animationFillMode: 'forwards' }}
               onLoad={(e) => {
                 (e.target as HTMLImageElement).style.opacity = '1';
