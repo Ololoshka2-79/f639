@@ -20,10 +20,8 @@ function usePinchZoom() {
     lastPoint: { x: 0, y: 0 },
     pointers: new Map<number, PointerEvent>(),
     isAnimating: false,
-    swipeX: 0,
     swipeY: 0,
     startTime: 0,
-    startX: 0,
     startY: 0
   });
 
@@ -32,13 +30,16 @@ function usePinchZoom() {
 
   const updateDOM = useCallback(() => {
     if (!imgRef.current) return;
-    const { scale, x, y, swipeX, swipeY } = stateRef.current;
+    const { scale, x, y, swipeY } = stateRef.current;
     
     // Use translate3d for GPU acceleration
-    // Combine pinch translate and swipe
-    const tx = x + swipeX;
     const ty = y + swipeY;
-    imgRef.current.style.transform = `translate3d(${tx}px, ${ty}px, 0) scale(${scale})`;
+    imgRef.current.style.transform = `translate3d(${x}px, ${ty}px, 0) scale(${scale})`;
+    
+    // Update touch action dynamically
+    if (containerRef.current) {
+      containerRef.current.style.touchAction = scale > 1 ? 'none' : 'pan-x';
+    }
     
     // Visual feedback for swipe
     if (swipeY > 0 && scale <= 1) {
@@ -64,7 +65,6 @@ function usePinchZoom() {
     stateRef.current.scale = 1;
     stateRef.current.x = 0;
     stateRef.current.y = 0;
-    stateRef.current.swipeX = 0;
     stateRef.current.swipeY = 0;
     if (animate && imgRef.current) {
       imgRef.current.style.transition = 'transform 0.3s cubic-bezier(0.2, 0, 0.2, 1)';
@@ -79,7 +79,6 @@ function usePinchZoom() {
     const { pointers } = stateRef.current;
     pointers.set(e.pointerId, e.nativeEvent);
     stateRef.current.startTime = Date.now();
-    stateRef.current.startX = e.clientX;
     stateRef.current.startY = e.clientY;
 
     if (pointers.size === 1) {
@@ -109,17 +108,10 @@ function usePinchZoom() {
         stateRef.current.y += dy;
         requestUpdate();
       } else {
-        // Swipe down or left/right logic
-        const sdx = e.clientX - stateRef.current.startX;
+        // Swipe down logic
         const sdy = e.clientY - stateRef.current.startY;
-        
-        if (Math.abs(sdx) > Math.abs(sdy) * 1.2) {
-          stateRef.current.swipeX = sdx;
-          stateRef.current.swipeY = 0;
-          requestUpdate();
-        } else if (sdy > 0) {
+        if (sdy > 0) {
           stateRef.current.swipeY = sdy;
-          stateRef.current.swipeX = 0;
           requestUpdate();
         }
       }
@@ -136,24 +128,17 @@ function usePinchZoom() {
     }
   };
 
-  const onPointerUp = (e: React.PointerEvent, onSwipeDown: () => void, onSwipeLeft?: () => void, onSwipeRight?: () => void) => {
-    const { pointers, scale, swipeX, swipeY, startTime } = stateRef.current;
+  const onPointerUp = (e: React.PointerEvent, onSwipeDown: () => void) => {
+    const { pointers, scale, swipeY, startTime } = stateRef.current;
     pointers.delete(e.pointerId);
     
     if (pointers.size === 0) {
-      const duration = Math.max(1, Date.now() - startTime);
-      const velocityY = swipeY / duration;
-      const velocityX = Math.abs(swipeX) / duration;
+      const duration = Date.now() - startTime;
+      const velocity = swipeY / duration;
 
       if (scale <= 1) {
-        if (swipeY > 150 || (swipeY > 50 && velocityY > 0.5)) {
+        if (swipeY > 150 || (swipeY > 50 && velocity > 0.5)) {
           onSwipeDown();
-        } else if (swipeX < -60 || (swipeX < -20 && velocityX > 0.5)) {
-          if (onSwipeLeft) onSwipeLeft();
-          else reset();
-        } else if (swipeX > 60 || (swipeX > 20 && velocityX > 0.5)) {
-          if (onSwipeRight) onSwipeRight();
-          else reset();
         } else {
           reset();
         }
@@ -175,12 +160,7 @@ function usePinchZoom() {
   return { imgRef, containerRef, onPointerDown, onPointerMove, onPointerUp, onDoubleTap, reset };
 }
 
-const FullscreenZoomImage: React.FC<{ 
-  src: string; 
-  onSwipeDown: () => void;
-  onSwipeLeft?: () => void;
-  onSwipeRight?: () => void;
-}> = ({ src, onSwipeDown, onSwipeLeft, onSwipeRight }) => {
+const FullscreenZoomImage: React.FC<{ src: string; onSwipeDown: () => void }> = ({ src, onSwipeDown }) => {
   const { imgRef, containerRef, onPointerDown, onPointerMove, onPointerUp, onDoubleTap } = usePinchZoom();
   const haptics = useHaptics();
 
@@ -193,11 +173,11 @@ const FullscreenZoomImage: React.FC<{
     <div
       ref={containerRef}
       className="flex items-center justify-center w-full h-full select-none"
-      style={{ touchAction: 'none' }}
+      style={{ touchAction: 'pan-x' }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={(e) => onPointerUp(e, onSwipeDown, onSwipeLeft, onSwipeRight)}
-      onPointerCancel={(e) => onPointerUp(e, onSwipeDown, onSwipeLeft, onSwipeRight)}
+      onPointerUp={(e) => onPointerUp(e, onSwipeDown)}
+      onPointerCancel={(e) => onPointerUp(e, onSwipeDown)}
       onClick={(e) => {
         const now = Date.now();
         if ((window as any)._lastTap && now - (window as any)._lastTap < 300) {
@@ -229,11 +209,11 @@ const FullscreenZoomImage: React.FC<{
 // ── Main Gallery ───────────────────────────────────────────────────────
 export const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [slideDirection, setSlideDirection] = useState(0);
   const haptics = useHaptics();
   const lastFullscreenCloseAt = useRef(0);
   const wasFullscreenRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fullscreenScrollRef = useRef<HTMLDivElement>(null);
 
   const isFullscreen = useProductLightboxStore((s) => s.isOpen);
   const activeImageIndex = useProductLightboxStore((s) => s.activeImageIndex);
@@ -246,23 +226,16 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     document.body.style.overflow = '';
   }, [setLightboxOpen]);
 
-  const handleSwipeLeft = useCallback(() => {
-    if (images.length <= 1) return;
-    setSlideDirection(1);
-    const activeIdx = useProductLightboxStore.getState().activeImageIndex;
-    const nextIndex = (activeIdx + 1) % images.length;
-    openFullscreenInStore(nextIndex);
-    haptics.selection();
-  }, [images.length, openFullscreenInStore, haptics]);
-
-  const handleSwipeRight = useCallback(() => {
-    if (images.length <= 1) return;
-    setSlideDirection(-1);
-    const activeIdx = useProductLightboxStore.getState().activeImageIndex;
-    const prevIndex = activeIdx === 0 ? images.length - 1 : activeIdx - 1;
-    openFullscreenInStore(prevIndex);
-    haptics.selection();
-  }, [images.length, openFullscreenInStore, haptics]);
+  const handleFullscreenScroll = () => {
+    if (!fullscreenScrollRef.current) return;
+    const { scrollLeft, clientWidth } = fullscreenScrollRef.current;
+    if (clientWidth === 0) return;
+    const active = Math.round(scrollLeft / clientWidth);
+    if (active !== useProductLightboxStore.getState().activeImageIndex) {
+      useProductLightboxStore.getState().openFullscreen(active);
+      haptics.selection();
+    }
+  };
 
   const openFullscreenViewer = useCallback(
     (imageList: string[], index: number) => {
@@ -287,7 +260,16 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
     }
     wasFullscreenRef.current = isFullscreen;
     if (!isFullscreen) document.body.style.overflow = '';
-  }, [isFullscreen]);
+    
+    // Sync scroll position when opening
+    if (isFullscreen && fullscreenScrollRef.current) {
+      const container = fullscreenScrollRef.current;
+      // Use requestAnimationFrame to ensure DOM is ready and visible
+      requestAnimationFrame(() => {
+        container.scrollLeft = container.clientWidth * activeImageIndex;
+      });
+    }
+  }, [isFullscreen, activeImageIndex]);
 
   const handleScroll = () => {
     if (!scrollRef.current) return;
@@ -388,34 +370,22 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
               <span className="text-white text-[9px] uppercase tracking-widest">Смахните вниз</span>
             </div>
 
-            {/* Zoom image — stops click propagation so background click = close */}
+            {/* Native Scroll Container for Fullscreen */}
             <div
-              className="relative z-10 w-full h-full overflow-hidden flex items-center justify-center"
+              ref={fullscreenScrollRef}
+              onScroll={handleFullscreenScroll}
+              className="relative z-10 w-full h-full flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden no-scrollbar"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               onClick={(e) => e.stopPropagation()}
             >
-              <AnimatePresence initial={false} custom={slideDirection}>
-                <motion.div
-                  key={activeImageIndex}
-                  custom={slideDirection}
-                  variants={{
-                    enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
-                    center: { zIndex: 1, x: 0, opacity: 1 },
-                    exit: (dir: number) => ({ zIndex: 0, x: dir < 0 ? '100%' : '-100%', opacity: 0 })
-                  }}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ x: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } }}
-                  className="absolute inset-0 flex items-center justify-center"
-                >
+              {images.map((src, i) => (
+                <div key={`fs-img-${i}`} className="w-full h-full shrink-0 snap-center relative flex items-center justify-center">
                   <FullscreenZoomImage
-                    src={fullscreenSrc}
+                    src={src}
                     onSwipeDown={closeFullscreenViewer}
-                    onSwipeLeft={handleSwipeLeft}
-                    onSwipeRight={handleSwipeRight}
                   />
-                </motion.div>
-              </AnimatePresence>
+                </div>
+              ))}
             </div>
 
             {/* Image counter */}
