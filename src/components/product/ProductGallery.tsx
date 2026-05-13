@@ -255,14 +255,15 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images }) => {
   }, []);
 
   useEffect(() => {
-    if (wasFullscreenRef.current && !isFullscreen) {
+    const wasOpen = wasFullscreenRef.current;
+    if (wasOpen && !isFullscreen) {
       lastFullscreenCloseAt.current = performance.now();
     }
     wasFullscreenRef.current = isFullscreen;
     if (!isFullscreen) document.body.style.overflow = '';
     
-    // Sync scroll position when opening
-    if (isFullscreen && fullscreenScrollRef.current) {
+    // Sync scroll position ONLY when opening
+    if (isFullscreen && !wasOpen && fullscreenScrollRef.current) {
       const container = fullscreenScrollRef.current;
       // Use requestAnimationFrame to ensure DOM is ready and visible
       requestAnimationFrame(() => {
