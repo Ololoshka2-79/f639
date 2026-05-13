@@ -157,6 +157,61 @@ function usePinchZoom() {
     }
   };
 
+  // Prevent native scroll interruption during custom gestures (swipe down, zoom)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    let startX = 0;
+    let startY = 0;
+    let isVertical = false;
+    let isChecking = false;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        isChecking = true;
+        isVertical = false;
+      } else {
+        isChecking = false;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        // Multi-touch (pinch): lock native scrolling
+        e.preventDefault();
+        return;
+      }
+      
+      if (isChecking) {
+        const dx = Math.abs(e.touches[0].clientX - startX);
+        const dy = Math.abs(e.touches[0].clientY - startY);
+        
+        // Wait for 3px movement to determine direction
+        if (dx > 3 || dy > 3) {
+          isChecking = false;
+          // If mostly vertical, it's a swipe down
+          isVertical = dy > dx;
+        }
+      }
+
+      // Lock scroll if doing vertical swipe down, OR if zoomed in
+      if (isVertical || stateRef.current.scale > 1) {
+        e.preventDefault();
+      }
+    };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+    };
+  }, []);
+
   return { imgRef, containerRef, onPointerDown, onPointerMove, onPointerUp, onDoubleTap, reset };
 }
 
