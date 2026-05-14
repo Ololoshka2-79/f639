@@ -129,18 +129,17 @@ async def debug_callback(call: CallbackQuery):
 
 
 async def main() -> None:
-    # Используем только TELEGRAM_BOT_TOKEN
+    # VERSION 2.0 - Читаем строго TELEGRAM_BOT_TOKEN
     token = (os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip().strip('"').strip("'")
     
     if not token:
-        log.error("CRITICAL: BOT_TOKEN is not set in environment variables!")
+        log.error("CRITICAL: TELEGRAM_BOT_TOKEN is empty or not set!")
         sys.exit(1)
         
-    # Выводим части токена для сверки в логах Railway (безопасно)
     token_prefix = token[:10]
     token_suffix = token[-4:] if len(token) > 4 else "****"
-    log.info("[DEBUG] Token starts with: %s... and ends with: ...%s (total length: %d)", 
-             token_prefix, token_suffix, len(token))
+    log.info("[VERSION 2.0] Reading TELEGRAM_BOT_TOKEN. Starts with: %s... and ends with: ...%s", 
+             token_prefix, token_suffix)
 
     bot = Bot(token)
     dp = Dispatcher()
