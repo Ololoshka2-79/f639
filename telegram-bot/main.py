@@ -129,7 +129,8 @@ async def debug_callback(call: CallbackQuery):
 
 
 async def main() -> None:
-    token = os.environ.get("BOT_TOKEN", "").strip()
+    # Пробуем получить токен из разных возможных названий переменных
+    token = (os.environ.get("BOT_TOKEN") or os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip()
     if not token:
         log.error("BOT_TOKEN не задан")
         sys.exit(1)
