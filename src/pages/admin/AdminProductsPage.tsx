@@ -3,14 +3,14 @@ import { Navigate } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useAdminStore } from '../../store/adminStore';
 import { useMergedCatalogProducts } from '../../hooks/useMergedCatalogProducts';
+import { useCategories } from '../../hooks/useCategories';
 import { ProductCard } from '../../components/admin/ProductCard';
 import { CategorySidebar } from '../../components/admin/CategorySidebar';
 import { ProductToolbar } from '../../components/admin/ProductToolbar';
 import { DeleteProductModal } from '../../components/admin/DeleteProductModal';
 import { ProductEditorModal } from '../../components/admin/ProductEditorModal';
 import { Info, PackageOpen, AlertTriangle, X } from 'lucide-react';
-import type { Product } from '../../types';
-import { useProductStore } from '../../store/productStore';
+import type { Product, Category } from '../../types';
 import { api } from '../../lib/api/endpoints';
 import { queryKeys } from '../../lib/queryKeys';
 
@@ -31,13 +31,27 @@ export const AdminProductsPage: React.FC = () => {
     // ЕДИНЫЙ источник товаров — React Query cache
     const { data: allProducts = [] } = useMergedCatalogProducts();
 
-    // Zustand store — ТОЛЬКО категории
-    const {
-        categories: allCategories,
-        addCategory,
-        updateCategory,
-        removeCategory,
-    } = useProductStore();
+    // ЕДИНЫЙ источник категорий — React Query cache
+    const { data: allCategories = [] } = useCategories();
+
+    // --- Category Mutations ---
+    const createCategoryMutation = useMutation({
+        mutationFn: (cat: Omit<Category, 'id'>) => api.categories.upsert({ ...cat, id: `cat-${Math.random().toString(36).slice(2, 9)}` } as Category),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.categories }),
+        onError: (err) => showError(`Не удалось создать категорию: ${err.message}`)
+    });
+
+    const updateCategoryMutation = useMutation({
+        mutationFn: (cat: Category) => api.categories.upsert(cat),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.categories }),
+        onError: (err) => showError(`Не удалось обновить категорию: ${err.message}`)
+    });
+
+    const deleteCategoryMutation = useMutation({
+        mutationFn: (id: string) => api.categories.remove(id),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.categories }),
+        onError: (err) => showError(`Не удалось удалить категорию: ${err.message}`)
+    });
 
     // --- Mutations ---
 
@@ -241,7 +255,7 @@ export const AdminProductsPage: React.FC = () => {
                         onAddCategory={() => {
                             const name = prompt('Название категории:');
                             if (name) {
-                                addCategory({ 
+                                createCategoryMutation.mutate({ 
                                     name, 
                                     slug: name.toLowerCase().replace(/ /g, '-'), 
                                     sortOrder: allCategories.length + 1 
@@ -250,7 +264,7 @@ export const AdminProductsPage: React.FC = () => {
                         }}
                         onEditCategory={(cat) => {
                             const name = prompt('Новое название:', cat.name);
-                            if (name) updateCategory(cat.id, { name });
+                            if (name) updateCategoryMutation.mutate({ ...cat, name });
                         }}
                         onDeleteCategory={(id) => {
                             const catProducts = products.filter(p => p.categoryId === id);
@@ -259,7 +273,7 @@ export const AdminProductsPage: React.FC = () => {
                                 catProducts.forEach(p => {
                                     deleteMutation.mutate(p.id);
                                 });
-                                removeCategory(id);
+                                deleteCategoryMutation.mutate(id);
                             }
                         }}
                      />

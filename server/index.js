@@ -14,6 +14,11 @@ import {
   removeProductById,
   upsertProduct,
 } from './productRepository.js';
+import {
+  listCategories,
+  upsertCategory,
+  removeCategoryById
+} from './categoryRepository.js';
 import { saveOrder, listOrdersByUserId } from './orderRepository.js';
 import { validateTelegramInitData } from './telegramAuth.js';
 import { getSettings, updateSettings } from './settingsRepository.js';
@@ -121,6 +126,34 @@ const v1Router = express.Router();
 
 v1Router.get('/health', (_req, res) => {
   res.json({ ok: true });
+});
+
+v1Router.get('/categories', async (_req, res) => {
+  const categories = await listCategories();
+  res.json(categories);
+});
+
+v1Router.post('/categories', requireAdmin, async (req, res) => {
+  const category = req.body;
+  if (!category) {
+    return res.status(400).json({ message: 'Category body is required' });
+  }
+  try {
+    const updated = await upsertCategory(category);
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to upsert category', error: error.message });
+  }
+});
+
+v1Router.delete('/categories/:id', requireAdmin, async (req, res) => {
+  try {
+    const removed = await removeCategoryById(req.params.id);
+    if (!removed) return res.status(404).json({ message: 'Category not found' });
+    res.json({ success: true, removed });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to delete category', error: error.message });
+  }
 });
 
 v1Router.get('/products', async (_req, res) => {

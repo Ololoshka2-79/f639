@@ -1,9 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api/endpoints';
 import { queryKeys } from '../lib/queryKeys';
-import { useProductStore } from '../store/productStore';
-import { CATEGORIES } from '../mocks/data';
-import { useEffect } from 'react';
+
 import type { Product } from '../types';
 
 /**
@@ -18,8 +16,6 @@ import type { Product } from '../types';
  * Categories инициализируются из моков при первом монтировании (store-only).
  */
 export function useProductList() {
-  const setCategories = useProductStore((s) => s.setCategories);
-
   const query = useQuery<Product[], Error>({
     queryKey: queryKeys.products,
     queryFn: async (): Promise<Product[]> => api.products.list(),
@@ -27,14 +23,6 @@ export function useProductList() {
     refetchInterval: 15_000,
     retry: 2,
   });
-
-  // Initialize categories from mocks if store is empty
-  useEffect(() => {
-    const cats = useProductStore.getState().categories;
-    if (!cats || cats.length === 0) {
-      setCategories(CATEGORIES);
-    }
-  }, [setCategories]);
 
   return query;
 }

@@ -7,14 +7,29 @@ import { useLocation } from 'react-router-dom';
 import { useHaptics } from '../hooks/useHaptics';
 import { useAdminStore } from '../store/adminStore';
 import { useUIStore } from '../store/uiStore';
-import { useProductStore } from '../store/productStore';
+
+import { useCategories } from '../hooks/useCategories';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../lib/api/endpoints';
+import { queryKeys } from '../lib/queryKeys';
 
 export const CatalogPage: React.FC = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const { selectedCategory, setSelectedCategory, searchQuery } = useCatalogStore();
   const { editMode } = useAdminStore();
   const { categoryNames, setCategoryName } = useUIStore();
-  const { categories, addCategory, removeCategory } = useProductStore();
+  const queryClient = useQueryClient();
+  const { data: categories = [] } = useCategories();
+
+  const createCategoryMutation = useMutation({
+    mutationFn: (cat: Parameters<typeof api.categories.upsert>[0]) => api.categories.upsert(cat),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.categories })
+  });
+  
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (id: string) => api.categories.remove(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.categories })
+  });
   const haptics = useHaptics();
   const location = useLocation();
   const isFavorites = location.pathname === '/favorites';
@@ -84,7 +99,7 @@ export const CatalogPage: React.FC = () => {
                   onClick={async (e) => {
                     e.stopPropagation();
                   if(window.confirm('Удалить категорию и все товары в ней?')) {
-                      removeCategory(cat.id);
+                      deleteCategoryMutation.mutate(cat.id);
                       if (selectedCategory === cat.id) setSelectedCategory(null);
                     }
                   }}
@@ -100,7 +115,7 @@ export const CatalogPage: React.FC = () => {
         {editMode && (
           <button
             onClick={() => { 
-                addCategory({ name: 'Новая категория', slug: 'new-category', sortOrder: categories.length + 1 }); 
+                createCategoryMutation.mutate({ name: 'Новая категория', slug: `new-category-${Math.random().toString(36).slice(2,8)}`, sortOrder: categories.length + 1 }); 
                 haptics.success(); 
             }}
             className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center bg-app-accent/10 border border-app-accent/30 text-app-accent"

@@ -105,6 +105,13 @@ export const api = {
         return handleFallback(err, () => getFallbackCategories());
       }
     },
+    upsert: async (category: Category | Omit<Category, 'id'>) => {
+      const response = await apiClient.post<Category>('/categories', category);
+      return response.data;
+    },
+    remove: async (id: string) => {
+      await apiClient.delete(`/categories/${id}`);
+    },
   },
   products: {
     list: async (params: ProductListParams = {}) => {

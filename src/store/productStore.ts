@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Product, Category } from '../types';
+import type { Product } from '../types';
 
 interface ProductStore {
   /* ---- Products ---- */
@@ -11,12 +11,6 @@ interface ProductStore {
   duplicateProduct: (id: string) => void;
   reorderProducts: (from: number, to: number) => void;
 
-  /* ---- Categories ---- */
-  categories: Category[];
-  setCategories: (categories: Category[]) => void;
-  addCategory: (category: Omit<Category, 'id'>) => void;
-  updateCategory: (id: string, updates: Partial<Category>) => void;
-  removeCategory: (id: string) => void;
 }
 
 export const useProductStore = create<ProductStore>()((set, _get) => ({
@@ -58,21 +52,4 @@ export const useProductStore = create<ProductStore>()((set, _get) => ({
     return { products: updated };
   }),
 
-  /* ---- Categories ---- */
-  categories: [],
-  setCategories: (categories) => set({ categories }),
-
-  addCategory: (categoryData) => {
-    const id = Math.random().toString(36).substr(2, 9);
-    const newCat: Category = { ...categoryData, id };
-    set((state) => ({ categories: [...state.categories, newCat] }));
-  },
-
-  updateCategory: (id, updates) => set((state) => ({
-    categories: state.categories.map((c) => (c.id === id ? { ...c, ...updates } : c)),
-  })),
-
-  removeCategory: (id) => set((state) => ({
-    categories: state.categories.filter((c) => c.id !== id),
-  })),
 }));
