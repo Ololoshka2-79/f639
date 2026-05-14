@@ -133,11 +133,14 @@ async def main() -> None:
     token = (os.environ.get("BOT_TOKEN") or os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip().strip('"').strip("'")
     
     if not token:
-        log.error("BOT_TOKEN не задан")
+        log.error("CRITICAL: BOT_TOKEN is not set in environment variables!")
         sys.exit(1)
         
-    masked_token = f"{token[:10]}... (length: {len(token)})"
-    log.info("Starting bot with token: %s", masked_token)
+    # Выводим части токена для сверки в логах Railway (безопасно)
+    token_prefix = token[:10]
+    token_suffix = token[-4:] if len(token) > 4 else "****"
+    log.info("[DEBUG] Token starts with: %s... and ends with: ...%s (total length: %d)", 
+             token_prefix, token_suffix, len(token))
 
     bot = Bot(token)
     dp = Dispatcher()
