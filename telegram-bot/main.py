@@ -129,17 +129,22 @@ async def debug_callback(call: CallbackQuery):
 
 
 async def main() -> None:
-    # VERSION 2.0 - Читаем строго TELEGRAM_BOT_TOKEN
-    token = (os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip().strip('"').strip("'")
+    # !!! BIG WARNING VERSION 3.0 !!!
+    token_from_tg = os.environ.get("TELEGRAM_BOT_TOKEN")
+    token_from_bot = os.environ.get("BOT_TOKEN")
+    
+    log.info("!!! DEBUG VERSION 3.0 !!!")
+    log.info("Checking TELEGRAM_BOT_TOKEN: %s", (token_from_tg[:5] + "...") if token_from_tg else "MISSING")
+    log.info("Checking BOT_TOKEN: %s", (token_from_bot[:5] + "...") if token_from_bot else "MISSING")
+
+    token = (token_from_tg or token_from_bot or "").strip().strip('"').strip("'")
     
     if not token:
-        log.error("CRITICAL: TELEGRAM_BOT_TOKEN is empty or not set!")
+        log.error("CRITICAL: NO TOKEN FOUND IN ENV!")
         sys.exit(1)
         
-    token_prefix = token[:10]
-    token_suffix = token[-4:] if len(token) > 4 else "****"
-    log.info("[VERSION 2.0] Reading TELEGRAM_BOT_TOKEN. Starts with: %s... and ends with: ...%s", 
-             token_prefix, token_suffix)
+    token_suffix = token[-4:]
+    log.info("FINAL SELECTED TOKEN ENDS WITH: ...%s", token_suffix)
 
     bot = Bot(token)
     dp = Dispatcher()
