@@ -32,7 +32,7 @@ export const config = {
     .split(/[,;\s]+/)
     .map((s) => s.trim())
     .filter(Boolean),
-  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
+  telegramBotToken: (process.env.TELEGRAM_BOT_TOKEN || '').trim().replace(/^['"]|['"]$/g, ''),
   adminIds: parseAdminIds(process.env.ADMIN_IDS),
   skipAdminAuth: process.env.SKIP_ADMIN_AUTH === 'true',  // локальная разработка без Telegram
   cloudinary: {
