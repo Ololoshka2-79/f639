@@ -273,7 +273,7 @@ export const ProductPage: React.FC = () => {
 
         {/* Description */}
         <section className="mt-12 border-b border-neutral-500/[0.14] pb-12 dark:border-neutral-400/[0.12]">
-          <p className="text-sm text-app-text/80 leading-relaxed font-light transition-all">
+          <p className="whitespace-pre-wrap text-sm text-app-text/80 leading-relaxed font-light transition-all">
             {product.description}
           </p>
         </section>
