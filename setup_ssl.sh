@@ -52,11 +52,10 @@ EOT
 echo "🔄 Перезапускаем Nginx..."
 sudo systemctl restart nginx
 
-# 4. Получение SSL-сертификата от Let's Encrypt
-echo "🛡️ Выпускаем бесплатный SSL-сертификат..."
-# --nginx автоматически настроит SSL в конфиге Nginx
-# --non-interactive и --agree-tos принимают соглашение автоматически
-sudo certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email $EMAIL
+# 4. Получение SSL-сертификата от альтернативного центра (BuyPass)
+echo "🛡️ Выпускаем бесплатный SSL-сертификат (через BuyPass Go SSL)..."
+# Используем BuyPass вместо Let's Encrypt для обхода лимита 50 сертификатов/неделю на fvds.ru
+sudo certbot --nginx -d $DOMAIN --server https://api.buypass.com/acme/directory --non-interactive --agree-tos --email $EMAIL
 
 # Перезапускаем Nginx для применения SSL-конфигурации
 sudo systemctl restart nginx
