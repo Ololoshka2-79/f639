@@ -17,9 +17,16 @@ echo "✏️ Обновляем адрес WEB_APP_URL в конфигураци
 # Заменяем старый адрес Railway во всех .env файлах проекта
 sed -i "s|https://f639.up.railway.app|https://$DOMAIN|g" /var/f639/.env
 sed -i "s|https://f639.up.railway.app|https://$DOMAIN|g" /var/f639/telegram-bot/.env
+
+# Также заменяем временный технический адрес fvds.ru, если он был прописан ранее
+sed -i "s|ollolo.fvds.ru|$DOMAIN|g" /var/f639/.env
+sed -i "s|ollolo.fvds.ru|$DOMAIN|g" /var/f639/telegram-bot/.env
+
 if [ -f /var/f639/server/.env ]; then
     # Также добавляем новый домен в список разрешенных CORS источников (ALLOWED_ORIGINS)
     sed -i "s|ALLOWED_ORIGINS=|ALLOWED_ORIGINS=https://$DOMAIN,http://localhost:5173,|g" /var/f639/server/.env
+    # На случай если там был старый fvds адрес
+    sed -i "s|ollolo.fvds.ru|$DOMAIN|g" /var/f639/server/.env
 fi
 
 # 2. Установка Nginx и Certbot
