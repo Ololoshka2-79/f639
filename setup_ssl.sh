@@ -4,7 +4,7 @@
 # Выход при ошибках
 set -e
 
-DOMAIN="ollolo.fvds.ru"
+DOMAIN="f639.ru"
 EMAIL="admin@$DOMAIN" # Email для уведомлений Let's Encrypt
 
 echo "========================================="
@@ -32,7 +32,7 @@ echo "⚙️ Настраиваем конфигурационный файл Ng
 cat <<EOT | sudo tee /etc/nginx/sites-available/default
 server {
     listen 80;
-    server_name $DOMAIN;
+    server_name $DOMAIN www.$DOMAIN;
 
     location / {
         proxy_pass http://127.0.0.1:8787;
