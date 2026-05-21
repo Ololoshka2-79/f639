@@ -105,9 +105,7 @@ async function uploadBuffer(fileBuffer, folder) {
         { 
           folder, 
           resource_type: 'image',
-          format: 'webp',
           transformation: [
-            { width: 1200, crop: 'limit' },
             { quality: 'auto' }
           ]
         },
