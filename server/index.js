@@ -102,7 +102,15 @@ async function uploadBuffer(fileBuffer, folder) {
   if (cloudinaryEnabled) {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder, resource_type: 'image' },
+        { 
+          folder, 
+          resource_type: 'image',
+          format: 'webp',
+          transformation: [
+            { width: 1200, crop: 'limit' },
+            { quality: 'auto' }
+          ]
+        },
         (error, result) => {
           if (error) return reject(error);
           return resolve(result);
