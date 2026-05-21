@@ -33,6 +33,7 @@ export const config = {
     .map((s) => s.trim())
     .filter(Boolean),
   telegramBotToken: (process.env.TELEGRAM_BOT_TOKEN || '').trim().replace(/^['"]|['"]$/g, ''),
+  telegramApiUrl: (process.env.TELEGRAM_API_URL || 'https://api.telegram.org').trim().replace(/\/$/, ''),
   adminIds: parseAdminIds(process.env.ADMIN_IDS),
   skipAdminAuth: process.env.SKIP_ADMIN_AUTH === 'true',  // локальная разработка без Telegram
   cloudinary: {

@@ -329,7 +329,7 @@ const handlePostOrder = async (req, res) => {
 
       for (const adminId of config.adminIds) {
         try {
-          const tgUrl = `https://api.telegram.org/bot${config.telegramBotToken}/sendMessage`;
+          const tgUrl = `${config.telegramApiUrl}/bot${config.telegramBotToken}/sendMessage`;
           await fetch(tgUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
