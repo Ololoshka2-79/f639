@@ -146,7 +146,23 @@ async def main() -> None:
     token_suffix = token[-4:]
     log.info("FINAL SELECTED TOKEN ENDS WITH: ...%s", token_suffix)
 
-    bot = Bot(token)
+    proxy_url = os.environ.get("TELEGRAM_PROXY")
+    custom_api_url = os.environ.get("TELEGRAM_API_URL")
+    
+    if proxy_url or custom_api_url:
+        session_args = {}
+        if proxy_url:
+            session_args["proxy"] = proxy_url
+        if custom_api_url:
+            from aiogram.client.telegram import TelegramAPIServer
+            session_args["api"] = TelegramAPIServer.from_base(custom_api_url)
+            
+        from aiogram.client.session.aiohttp import AiohttpSession
+        session = AiohttpSession(**session_args)
+        bot = Bot(token, session=session)
+    else:
+        bot = Bot(token)
+
     dp = Dispatcher()
     dp.include_router(router)
 
