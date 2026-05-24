@@ -12,6 +12,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as
 export const AnalyticsPage: React.FC = () => {
   const { isAdmin } = useAdminStore();
   const [period, setPeriod] = useState<number>(7);
+  const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
   const { kpi, chartData, funnel, topProducts, userSessions, recentActivity, hasData } = useAnalytics(period);
   useEffect(() => {
     // Analytics is now fetched from the backend.
@@ -218,13 +219,21 @@ export const AnalyticsPage: React.FC = () => {
                 
                 <div className="space-y-3">
                    {userSessions.map((session: AnalyticsUserSessionRow, i: number) => {
-                     const [isExpanded, setIsExpanded] = useState(false);
+                     const sessionId = `${session.userId}-${i}`;
+                     const isExpanded = expandedSessions.has(sessionId);
                      return (
-                       <div key={`${session.userId}-${i}`} className="group overflow-hidden rounded-xl border border-app-border-strong bg-app-bg/20 transition-all hover:bg-app-bg/40">
-                          <button 
-                            onClick={() => setIsExpanded(!isExpanded)}
-                            className="flex w-full items-center justify-between p-4 text-left"
-                          >
+                        <div key={sessionId} className="group overflow-hidden rounded-xl border border-app-border-strong bg-app-bg/20 transition-all hover:bg-app-bg/40">
+                           <button 
+                             onClick={() => {
+                               setExpandedSessions(prev => {
+                                 const next = new Set(prev);
+                                 if (next.has(sessionId)) next.delete(sessionId);
+                                 else next.add(sessionId);
+                                 return next;
+                               });
+                             }}
+                             className="flex w-full items-center justify-between p-4 text-left"
+                           >
                              <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full bg-app-accent/10 font-serif text-app-accent">
                                    {session.firstName?.[0] || 'U'}
