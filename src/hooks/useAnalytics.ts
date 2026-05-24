@@ -19,6 +19,7 @@ export type AnalyticsUserSessionRow = UserSessionAgg & {
 
 export function useAnalytics(periodDays: number = 7) {
   const { events, uniqueUserIds } = useAnalyticsStore();
+  const products = useProductStore((state) => state.products);
 
   return useMemo(() => {
     const now = new Date();
@@ -68,7 +69,7 @@ export function useAnalytics(periodDays: number = 7) {
       orders: recentEvents.filter(e => e.event === 'create_order').length
     };
 
-    const productsRef = useProductStore.getState().products;
+    const productsRef = products;
 
     // Products
     const productStatsMap = new Map<string, { id: string, name: string, views: number, carts: number, orders: number, revenue: number }>();
@@ -153,5 +154,5 @@ export function useAnalytics(periodDays: number = 7) {
       recentActivity,
       hasData: allEvents.length > 0
     };
-  }, [events, uniqueUserIds, periodDays]);
+  }, [events, uniqueUserIds, periodDays, products]);
 }
