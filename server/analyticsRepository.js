@@ -84,3 +84,15 @@ export async function listEvents(days = 30) {
 
   return (data || []).map(mapFromDb);
 }
+
+export async function deleteAllEvents() {
+  const { error } = await supabase
+    .from('analytics_events')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000'); // Условие для DELETE через Supabase SDK обязательно
+
+  if (error) {
+    console.error('[Supabase] deleteAllEvents error:', error);
+    throw error;
+  }
+}

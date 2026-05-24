@@ -282,6 +282,9 @@ export const api = {
     getAdmin: async () => {
       const response = await apiClient.get('/admin/analytics');
       return response.data;
+    },
+    reset: async () => {
+      await apiClient.delete('/admin/analytics');
     }
   }
 };

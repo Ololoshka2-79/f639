@@ -22,7 +22,7 @@ import {
 import { saveOrder, listOrdersByUserId } from './orderRepository.js';
 import { validateTelegramInitData } from './telegramAuth.js';
 import { getSettings, updateSettings } from './settingsRepository.js';
-import { addEvent, listEvents } from './analyticsRepository.js';
+import { addEvent, listEvents, deleteAllEvents } from './analyticsRepository.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -383,6 +383,15 @@ v1Router.get('/admin/analytics', requireAdmin, async (req, res) => {
     res.json(events);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch analytics' });
+  }
+});
+
+v1Router.delete('/admin/analytics', requireAdmin, async (req, res) => {
+  try {
+    await deleteAllEvents();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to reset analytics' });
   }
 });
 

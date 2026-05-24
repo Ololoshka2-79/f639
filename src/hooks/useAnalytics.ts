@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useAnalyticsStore } from '../store/analyticsStore';
 import { format, subDays, isAfter, parseISO } from 'date-fns';
-import { useProductStore } from '../store/productStore';
+import { useProductList } from './useMergedCatalogProducts';
 import type { Product } from '../types';
 
 type UserSessionAgg = {
@@ -19,7 +19,8 @@ export type AnalyticsUserSessionRow = UserSessionAgg & {
 
 export function useAnalytics(periodDays: number = 7) {
   const { events, uniqueUserIds } = useAnalyticsStore();
-  const products = useProductStore((state) => state.products);
+  const { data: productsList } = useProductList();
+  const products = productsList || [];
 
   return useMemo(() => {
     const now = new Date();

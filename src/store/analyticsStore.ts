@@ -23,13 +23,20 @@ interface AnalyticsState {
   uniqueUserIds: string[];
   trackEvent: (evt: Partial<AnalyticsEvent> & { event: AnalyticsEventType; userId: string }) => void;
   fetchAnalytics: () => Promise<void>;
-  resetAnalytics: () => void;
+  resetAnalytics: () => Promise<void>;
 }
 
 export const useAnalyticsStore = create<AnalyticsState>()((set) => ({
   events: [],
   uniqueUserIds: [],
-  resetAnalytics: () => set({ events: [], uniqueUserIds: [] }),
+  resetAnalytics: async () => {
+    try {
+      await api.analytics.reset();
+    } catch (err) {
+      console.error('[AnalyticsStore] Failed to reset analytics on server', err);
+    }
+    set({ events: [], uniqueUserIds: [] });
+  },
   fetchAnalytics: async () => {
     try {
       const data = await api.analytics.getAdmin();
