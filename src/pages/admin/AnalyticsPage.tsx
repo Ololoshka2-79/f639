@@ -13,6 +13,7 @@ export const AnalyticsPage: React.FC = () => {
   const { isAdmin } = useAdminStore();
   const [period, setPeriod] = useState<number>(7);
   const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
+  const [isResetting, setIsResetting] = useState(false);
   const { kpi, chartData, funnel, topProducts, userSessions, recentActivity, hasData } = useAnalytics(period);
   useEffect(() => {
     // Analytics is now fetched from the backend.
@@ -45,16 +46,21 @@ export const AnalyticsPage: React.FC = () => {
         <div className="w-10 flex-shrink-0" aria-hidden />
         <h1 className="flex-1 text-center font-serif text-xl text-app-text">Аналитика</h1>
         <button 
-          onClick={() => {
-            if(window.confirm('Вы уверены, что хотите сбросить ВСЮ аналитику?')) {
-              useAnalyticsStore.getState().resetAnalytics();
+          onClick={async () => {
+            if (window.confirm('Вы уверены, что хотите сбросить ВСЮ аналитику?')) {
+              setIsResetting(true);
+              await useAnalyticsStore.getState().resetAnalytics();
+              setIsResetting(false);
               window.location.reload();
             }
           }}
-          className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-full text-red-400 hover:bg-red-400/10 transition-colors"
+          disabled={isResetting}
+          className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-full text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40 disabled:cursor-wait"
           title="Сбросить аналитику"
         >
-          <Trash2 size={20} />
+          {isResetting
+            ? <span className="w-4 h-4 border-2 border-red-400/40 border-t-red-400 rounded-full animate-spin" />
+            : <Trash2 size={20} />}
         </button>
       </header>
 
@@ -326,7 +332,14 @@ export const AnalyticsPage: React.FC = () => {
                     <div key={evt.id} className="flex gap-3 items-start border-l border-app-border pl-3 relative">
                        <div className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-app-accent/50" />
                        <div className="flex flex-col flex-1 min-w-0">
-                          <span className="text-[9px] text-app-text-muted mb-1">{format(parseISO(evt.createdAt), 'HH:mm • dd MMM', {locale: ru})} {evt.userId && `• Пользователь ${evt.userId.slice(-4)}`}</span>
+                           <span className="text-[9px] text-app-text-muted mb-1">
+                             {format(parseISO(evt.createdAt), 'HH:mm • dd MMM', {locale: ru})}
+                             {' • '}
+                             {evt.firstName || evt.username
+                               ? <>{evt.firstName}{evt.username ? ` (@${evt.username})` : ''}</>
+                               : `ID: ...${evt.userId.slice(-6)}`
+                             }
+                           </span>
                           <p className="text-xs text-app-text">
                             {getEventName(evt.event)}
                             {evt.orderId && <span className="text-app-accent ml-1">#{evt.orderId.split('-')[0].toUpperCase()}</span>}
