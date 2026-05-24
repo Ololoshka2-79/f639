@@ -270,4 +270,18 @@ export const api = {
       return response.data;
     },
   },
+  analytics: {
+    track: async (eventData: any) => {
+      // Игнорируем ошибки при отправке аналитики, чтобы не блокировать интерфейс
+      try {
+        await apiClient.post('/analytics', eventData);
+      } catch (err) {
+        console.warn('[API] analytics track failed', err);
+      }
+    },
+    getAdmin: async () => {
+      const response = await apiClient.get('/admin/analytics');
+      return response.data;
+    }
+  }
 };

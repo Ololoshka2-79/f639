@@ -22,6 +22,7 @@ import {
 import { saveOrder, listOrdersByUserId } from './orderRepository.js';
 import { validateTelegramInitData } from './telegramAuth.js';
 import { getSettings, updateSettings } from './settingsRepository.js';
+import { addEvent, listEvents } from './analyticsRepository.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -363,6 +364,26 @@ v1Router.get('/settings', async (_req, res) => {
 v1Router.post('/settings', requireAdmin, async (req, res) => {
   const settings = await updateSettings(req.body);
   res.json(settings);
+});
+
+// --- Analytics Endpoints ---
+v1Router.post('/analytics', async (req, res) => {
+  try {
+    const event = await addEvent(req.body);
+    res.status(201).json(event);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to add analytics event' });
+  }
+});
+
+v1Router.get('/admin/analytics', requireAdmin, async (req, res) => {
+  try {
+    // Получаем аналитику за последние 90 дней
+    const events = await listEvents(90);
+    res.json(events);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch analytics' });
+  }
 });
 
 // Подключаем роутер с префиксом /v1 и без него (для обратной совместимости)

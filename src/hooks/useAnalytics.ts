@@ -68,13 +68,15 @@ export function useAnalytics(periodDays: number = 7) {
       orders: recentEvents.filter(e => e.event === 'create_order').length
     };
 
+    const productsRef = useProductStore.getState().products;
+
     // Products
     const productStatsMap = new Map<string, { id: string, name: string, views: number, carts: number, orders: number, revenue: number }>();
     recentEvents.forEach(e => {
       if (!e.productId) return;
       if (!productStatsMap.has(e.productId)) {
-        // Fallback names. Could map to a store to get actual names
-        productStatsMap.set(e.productId, { id: e.productId, name: `Товар ${e.productId}`, views: 0, carts: 0, orders: 0, revenue: 0 });
+        const pName = productsRef.find((p: Product) => p.id === e.productId)?.title || `ID: ${e.productId.split('-')[0]}`;
+        productStatsMap.set(e.productId, { id: e.productId, name: pName, views: 0, carts: 0, orders: 0, revenue: 0 });
       }
       const stat = productStatsMap.get(e.productId)!;
       if (e.event === 'view_product') stat.views++;
@@ -118,9 +120,7 @@ export function useAnalytics(periodDays: number = 7) {
        }
     });
 
-    const productsRef = useProductStore.getState().products;
     const userSessions = Array.from(userSessionsMap.values())
-      .filter(s => s.views.length > 0)
       .sort((a, b) => parseISO(b.lastActive).getTime() - parseISO(a.lastActive).getTime())
       .map(s => {
         const sortedViews = [...s.views].sort((a, b) => parseISO(b.time).getTime() - parseISO(a.time).getTime());
@@ -136,7 +136,7 @@ export function useAnalytics(periodDays: number = 7) {
     // Recent events feed
     const recentActivity = [...events]
       .sort((a, b) => parseISO(b.createdAt).getTime() - parseISO(a.createdAt).getTime())
-      .slice(0, 20);
+      .slice(0, 100);
 
     return {
       kpi: {

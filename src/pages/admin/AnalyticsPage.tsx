@@ -14,7 +14,8 @@ export const AnalyticsPage: React.FC = () => {
   const [period, setPeriod] = useState<number>(7);
   const { kpi, chartData, funnel, topProducts, userSessions, recentActivity, hasData } = useAnalytics(period);
   useEffect(() => {
-    // Analytics is now strictly driven by real user events.
+    // Analytics is now fetched from the backend.
+    useAnalyticsStore.getState().fetchAnalytics();
   }, []);
 
   if (!isAdmin) {
