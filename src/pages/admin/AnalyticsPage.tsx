@@ -245,7 +245,20 @@ export const AnalyticsPage: React.FC = () => {
                                    {session.firstName?.[0] || 'U'}
                                 </div>
                                 <div className="flex flex-col min-w-0">
-                                   <span className="text-xs font-medium text-app-text truncate">{session.firstName} {session.username ? `(@${session.username})` : ''}</span>
+                                   <span className="text-xs font-medium text-app-text truncate">
+                                     {session.firstName}{' '}
+                                     {session.username ? (
+                                       <a
+                                         href={`https://t.me/${session.username}`}
+                                         target="_blank"
+                                         rel="noopener noreferrer"
+                                         onClick={(e) => e.stopPropagation()}
+                                         className="text-app-accent hover:underline"
+                                       >
+                                         (@{session.username})
+                                       </a>
+                                     ) : ''}
+                                   </span>
                                    {session.phone && <span className="text-[9px] text-app-text-muted">{session.phone}</span>}
                                 </div>
                              </div>
@@ -336,7 +349,16 @@ export const AnalyticsPage: React.FC = () => {
                              {format(parseISO(evt.createdAt), 'HH:mm • dd MMM', {locale: ru})}
                              {' • '}
                              {evt.firstName || evt.username
-                               ? <>{evt.firstName}{evt.username ? ` (@${evt.username})` : ''}</>
+                               ? <>{evt.firstName}{evt.username ? (
+                                   <a
+                                     href={`https://t.me/${evt.username}`}
+                                     target="_blank"
+                                     rel="noopener noreferrer"
+                                     className="text-app-accent hover:underline"
+                                   >
+                                     {` (@${evt.username})`}
+                                   </a>
+                                 ) : ''}</>
                                : `ID: ...${evt.userId.slice(-6)}`
                              }
                            </span>
