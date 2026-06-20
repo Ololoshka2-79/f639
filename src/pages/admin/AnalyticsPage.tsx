@@ -246,18 +246,15 @@ export const AnalyticsPage: React.FC = () => {
                                 </div>
                                 <div className="flex flex-col min-w-0">
                                    <span className="text-xs font-medium text-app-text truncate">
-                                     {session.firstName}{' '}
-                                     {session.username ? (
-                                       <a
-                                         href={`https://t.me/${session.username}`}
-                                         target="_blank"
-                                         rel="noopener noreferrer"
-                                         onClick={(e) => e.stopPropagation()}
-                                         className="text-app-accent hover:underline"
-                                       >
-                                         (@{session.username})
-                                       </a>
-                                     ) : ''}
+                                     <a
+                                       href={session.username ? `https://t.me/${session.username}` : `tg://user?id=${session.userId}`}
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       onClick={(e) => e.stopPropagation()}
+                                       className="hover:underline text-app-text hover:text-app-accent transition-colors"
+                                     >
+                                       {session.firstName} {session.username ? `(@${session.username})` : ''}
+                                     </a>
                                    </span>
                                    {session.phone && <span className="text-[9px] text-app-text-muted">{session.phone}</span>}
                                 </div>
@@ -348,19 +345,20 @@ export const AnalyticsPage: React.FC = () => {
                            <span className="text-[9px] text-app-text-muted mb-1">
                              {format(parseISO(evt.createdAt), 'HH:mm • dd MMM', {locale: ru})}
                              {' • '}
-                             {evt.firstName || evt.username
-                               ? <>{evt.firstName}{evt.username ? (
-                                   <a
-                                     href={`https://t.me/${evt.username}`}
-                                     target="_blank"
-                                     rel="noopener noreferrer"
-                                     className="text-app-accent hover:underline"
-                                   >
-                                     {` (@${evt.username})`}
-                                   </a>
-                                 ) : ''}</>
-                               : `ID: ...${evt.userId.slice(-6)}`
-                             }
+                             {evt.firstName || evt.username || evt.userId ? (
+                               <a
+                                 href={evt.username ? `https://t.me/${evt.username}` : `tg://user?id=${evt.userId}`}
+                                 target="_blank"
+                                 rel="noopener noreferrer"
+                                 onClick={(e) => e.stopPropagation()}
+                                 className="hover:underline transition-colors"
+                               >
+                                 {evt.firstName || evt.username 
+                                   ? <>{evt.firstName}{evt.username ? ` (@${evt.username})` : ''}</>
+                                   : `ID: ...${evt.userId.slice(-6)}`
+                                 }
+                               </a>
+                             ) : ''}
                            </span>
                           <p className="text-xs text-app-text">
                             {getEventName(evt.event)}
